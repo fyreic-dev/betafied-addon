@@ -1,0 +1,44 @@
+{
+	"author": "fox",
+	"name": "betafied",
+	"packs": {
+		"behaviorPack": "./packs/BP",
+		"resourcePack": "./packs/RP"
+	},
+	"regolith": {
+		"dataPath": "./packs/data",
+		"filterDefinitions": {
+			"ts_transpiler": {
+				"url": "github.com/MajestikButter/Regolith-Filters",
+				"version": "6fa6a6a9298f7d033d0f2e421edfb33292807aae"
+			}
+		},
+		"formatVersion": "1.8.0",
+		"profiles": {
+			"default": {
+				"export": {
+					"bpName": "'betafied_bp'",
+					"build": "standard",
+					"rpName": "'betafied_rp'",
+					"target": "development"
+				},
+				"filters": [
+					{
+						"filter": "ts_transpiler",
+						"settings": {
+							"path": "BP/scripts",
+							"removeTS": true,
+							"compilerOptions": {
+								"target": "ES2021",
+								"module": "ESNext",
+								"moduleResolution": "Bundler",
+								"lib": ["ES2021"],
+								"skipLibCheck": true
+							}
+						}
+					}
+				]
+			}
+		}
+	}
+}

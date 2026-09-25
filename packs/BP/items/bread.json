@@ -1,0 +1,29 @@
+{
+    "format_version": "1.20.80",
+    "minecraft:item": {
+        "description": {
+            "identifier": "bh:bread",
+            "menu_category": {
+                "category": "nature",
+                "group": "itemGroup.name.miscFood"
+            }
+        },
+        "components": {
+            "minecraft:max_stack_size": 1,
+            "minecraft:icon": {
+                "textures": {
+                    "default": "bread"
+                }
+            },
+            "minecraft:use_modifiers": {
+                "use_duration": 0.05,
+                "movement_modifier": 1.0
+            },
+            "minecraft:food": {
+                "nutrition": 5,
+                "saturation_modifier": 0.6,
+                "can_always_eat": false
+            }
+        }
+    }
+}

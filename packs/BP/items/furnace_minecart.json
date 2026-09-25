@@ -1,0 +1,37 @@
+{
+  "format_version": "1.21.50",
+  "minecraft:item": {
+    "description": {
+      "identifier": "ubd:furnace_minecart",
+      "menu_category": {
+        "category": "items",
+        "group": "none"
+      }
+    },
+    "components": {
+      "minecraft:max_stack_size": 1,
+      "minecraft:allow_off_hand": false,
+      "minecraft:display_name": {
+        "value": "Furnace Minecart"
+      },
+	  "minecraft:icon": "ubd.furnace_minecart",
+      "minecraft:glint": false,
+      "minecraft:rarity": "common",
+      "minecraft:entity_placer": {
+        "entity": "ubd:furnace_minecart",
+        "dispense_on": [
+            "minecraft:rail",
+            "minecraft:golden_rail",
+            "minecraft:activator_rail",
+            "minecraft:detector_rail"
+        ],
+        "use_on": [
+            "minecraft:rail",
+            "minecraft:golden_rail",
+            "minecraft:activator_rail",
+            "minecraft:detector_rail"
+        ]
+      }
+    }
+  }
+}

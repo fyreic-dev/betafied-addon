@@ -1,0 +1,169 @@
+## Betafied Custom Items & Blocks
+tile.bh:crafting_table.name=Crafting Table
+tile.bh:fence.name=Fence
+tile.bh:wooden_slab.name=Wooden Slab
+item.bh:wooden_slab=Wooden Slab
+item.bh:apple=Apple
+item.bh:bread=Bread
+item.bh:porkchop=Raw Porkchop
+item.bh:cooked_porkchop=Cooked Porkchop
+item.bh:cod=Raw Fish
+item.bh:cooked_cod=Cooked Fish
+item.bh:golden_apple=Golden Apple
+item.bh:cookie=Cookie
+item.bh:bow=Bow
+item.bh:oak_stairs=Wooden Stairs
+item.bh:oak_log=Oak Wood
+item.bh:birch_log=Birch Wood
+item.bh:spruce_log=Spruce Wood
+item.bh:cobblestone_slab=Cobblestone Slab
+item.bh:sandstone_slab=Sandstone Slab
+item.bh:stone_slab=Stone Slab
+
+## Beta 1.7.3 Wood & Logs
+tile.planks.name=Wooden Planks
+tile.planks.oak.name=Wooden Planks
+tile.wood.name=Wooden Planks
+tile.wood.oak.name=Oak Wood
+tile.wood.spruce.name=Spruce Wood
+tile.wood.birch.name=Birch Wood
+tile.log.name=Wood
+tile.log.oak.name=Oak Wood
+tile.log.spruce.name=Spruce Wood
+tile.log.birch.name=Birch Wood
+
+## Beta 1.7.3 Stairs
+tile.oak_stairs.name=Wooden Stairs
+tile.stairsWood.name=Wooden Stairs
+item.oak_stairs.name=Wooden Stairs
+
+## Beta 1.7.3 Slabs
+tile.wooden_slab.name=Wooden Slab
+tile.wooden_slab.oak.name=Wooden Slab
+tile.stone_slab.wood.name=Wooden Slab
+tile.stoneSlab.wood.name=Wooden Slab
+tile.double_stone_slab.wood.name=Wooden Slab
+tile.stone_slab.stone.name=Stone Slab
+tile.stone_slab.name=Stone Slab
+tile.stoneSlab.stone.name=Stone Slab
+tile.stoneSlab.name=Stone Slab
+tile.double_stone_slab.stone.name=Stone Slab
+tile.stone_slab.cobble.name=Cobblestone Slab
+tile.stoneSlab.cobble.name=Cobblestone Slab
+tile.double_stone_slab.cobble.name=Cobblestone Slab
+tile.stone_slab.sand.name=Sandstone Slab
+tile.stoneSlab.sand.name=Sandstone Slab
+tile.double_stone_slab.sand.name=Sandstone Slab
+
+## Beta 1.7.3 Doors, Trapdoors, Fences, Signs & Boats
+item.wooden_door.name=Wooden Door
+item.doorWood.name=Wooden Door
+tile.wooden_door.name=Wooden Door
+tile.doorWood.name=Wooden Door
+tile.trapdoor.name=Trapdoor
+item.trapdoor.name=Trapdoor
+tile.fence.name=Fence
+tile.fence_gate.name=Fence Gate
+item.sign.name=Sign
+item.oak_sign.name=Sign
+tile.sign.name=Sign
+item.boat.oak.name=Boat
+item.boat.name=Boat
+
+## Beta 1.7.3 Flowers & Plants
+tile.red_flower.poppy.name=Rose
+tile.flower2.poppy.name=Rose
+tile.red_flower.name=Rose
+tile.poppy.name=Rose
+tile.rose.name=Rose
+tile.yellow_flower.dandelion.name=Flower
+tile.yellow_flower.name=Flower
+tile.flower.name=Flower
+tile.sapling.oak.name=Sapling
+tile.sapling.name=Sapling
+tile.tallgrass.grass.name=Grass
+tile.tallgrass.name=Grass
+tile.tallgrass.shrub.name=Dead Bush
+tile.deadbush.name=Dead Bush
+tile.reeds.name=Sugar cane
+item.reeds.name=Sugar Canes
+item.wheat_seeds.name=Seeds
+item.seeds.name=Seeds
+
+## Beta 1.7.3 World & Blocks
+tile.grass.name=Grass
+tile.snow.name=Snow
+tile.mossy_cobblestone.name=Moss Stone
+tile.stoneMoss.name=Moss Stone
+tile.cobblestone_mossy.name=Moss Stone
+tile.lit_pumpkin.name=Jack 'o' Lantern
+tile.litpumpkin.name=Jack 'o' Lantern
+tile.mobSpawner.name=Monster Spawner
+tile.mob_spawner.name=Monster Spawner
+tile.web.name=Cobweb
+
+## Beta 1.7.3 Dyes
+item.dye.red.name=Rose Red
+item.red_dye.name=Rose Red
+item.dyePowder.red.name=Rose Red
+item.dye.green.name=Cactus Green
+item.green_dye.name=Cactus Green
+item.dyePowder.green.name=Cactus Green
+item.dye.yellow.name=Dandelion Yellow
+item.yellow_dye.name=Dandelion Yellow
+item.dyePowder.yellow.name=Dandelion Yellow
+item.dye.white.name=Bone Meal
+item.bone_meal.name=Bone Meal
+item.dyePowder.white.name=Bone Meal
+item.dye.silver.name=Light Gray Dye
+item.light_gray_dye.name=Light Gray Dye
+item.dyePowder.silver.name=Light Gray Dye
+item.dye.black.name=Ink Sac
+item.dyePowder.black.name=Ink Sac
+item.dye.brown.name=Cocoa Beans
+item.dyePowder.brown.name=Cocoa Beans
+item.dye.blue.name=Lapis Lazuli
+item.dyePowder.blue.name=Lapis Lazuli
+
+## Beta 1.7.3 Food & Fish
+item.fish.name=Raw Fish
+item.fishRaw.name=Raw Fish
+item.cod.name=Raw Fish
+item.cooked_fish.name=Cooked Fish
+item.fishCooked.name=Cooked Fish
+item.cooked_cod.name=Cooked Fish
+item.porkchop.name=Raw Porkchop
+item.porkchopRaw.name=Raw Porkchop
+item.cooked_porkchop.name=Cooked Porkchop
+item.porkchopCooked.name=Cooked Porkchop
+item.porkchop_cooked.name=Cooked Porkchop
+
+## Beta 1.7.3 Armor
+item.chainmail_helmet.name=Chain Helmet
+item.chainmail_chestplate.name=Chain Chestplate
+item.chainmail_leggings.name=Chain Leggings
+item.chainmail_boots.name=Chain Boots
+item.helmetChain.name=Chain Helmet
+item.chestplateChain.name=Chain Chestplate
+item.leggingsChain.name=Chain Leggings
+item.bootsChain.name=Chain Boots
+item.golden_boots.name=Golden boots
+item.bootsGold.name=Golden boots
+
+## Beta 1.7.3 Items & Redstone & Misc
+item.redstone.name=Redstone
+item.milk.name=Milk
+item.bucketLava.name=Lava bucket
+item.lava_bucket.name=Lava bucket
+item.sulphur.name=Gunpowder
+item.gunpowder.name=Gunpowder
+item.repeater.name=Redstone Repeater
+item.diode.name=Redstone Repeater
+item.furnace_minecart.name=Minecart with Furnace
+item.minecartFurnace.name=Minecart with Furnace
+item.chest_minecart.name=Minecart with Chest
+item.minecartChest.name=Minecart with Chest
+tile.bed.name=Bed
+item.bed.name=Bed
+item.bed.red.name=Bed
+tile.bed.noSleep=You can only sleep at night

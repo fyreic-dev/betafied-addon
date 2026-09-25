@@ -1,0 +1,135 @@
+{
+	"format_version": "1.20.80",
+	"minecraft:entity": {
+		"description": {
+			"identifier": "ubd:furnace_minecart",
+			"runtime_identifier": "minecraft:minecart",
+			"is_spawnable": false,
+			"is_summonable": true,
+			"is_experimental": false
+		},
+		"component_groups": {
+			"movement": {
+				"minecraft:variant": {
+					"value": 1
+				},
+				"minecraft:pushable": {
+					"is_pushable": true,
+					"is_pushable_by_piston": true
+				}
+			},
+			"idle":{
+				"minecraft:variant": {
+					"value": 0
+				},
+				"minecraft:pushable": {
+					"is_pushable": false,
+					"is_pushable_by_piston": false
+				},
+				"minecraft:interact": {
+					"interactions": [
+						{
+						"on_interact": {
+							"filters": {
+							"all_of": [
+								{ "test": "is_family", "subject" : "other", "value" :  "player"},
+								{ "test": "has_equipment", "domain": "hand", "subject": "other", "value": "coal"}
+							]
+							}
+						},
+						"use_item": true,
+						"play_sounds": "ignite",
+						"interact_text": "action.interact.coal",
+						"cooldown": 120,
+						"particle_on_start": {
+							"particle_type": "flame",
+							"particle_y_offset": 1.0,
+							"particle_offset_towards_interactor": false
+						}
+						}
+					]
+				}
+			}
+		},
+		"components": {
+			"minecraft:rail_movement": {},
+			"minecraft:is_stackable": {},
+			"minecraft:type_family": {
+				"family": [
+					"minecart",
+					"inanimate"
+				]
+			},
+			"minecraft:collision_box": {
+				"width": 0.98,
+				"height": 0.7
+			},
+			"minecraft:physics": {"has_collision": true},
+			"minecraft:rail_sensor": {
+			},
+			"minecraft:health": {
+				"max": 1,
+				"value": 1
+			},
+			"minecraft:conditional_bandwidth_optimization": {
+				"default_values": {
+					"max_optimized_distance": 60,
+					"max_dropped_ticks": 20,
+					"use_motion_prediction_hints": true
+				},
+				"conditional_values": [
+					{
+						"max_optimized_distance": 0,
+						"max_dropped_ticks": 0,
+						"conditional_values": [
+							{
+								"test": "is_moving",
+								"subject": "self",
+								"operator": "==",
+								"value": true
+							}
+						]
+					}
+				]
+			}
+		},
+		"events": {
+			"minecraft:entity_spawned": {
+				"sequence": [
+					{
+						"add": {
+							"component_groups": [
+								"idle"
+
+							]
+						}
+					}
+				]
+			},
+			"fueled": {
+				"add": {
+					"component_groups": [
+						"movement"
+					]
+				},
+				"remove": {
+					"component_groups": [
+						"idle"
+					]
+				}
+			},
+			"unfueled": {
+				"add": {
+					"component_groups": [
+						"idle"
+					]
+				},
+				"remove": {
+					"component_groups": [
+						"movement"
+					]
+				}
+			}
+		}
+	}
+}

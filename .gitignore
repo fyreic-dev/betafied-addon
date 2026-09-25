@@ -1,0 +1,23 @@
+node_modules/
+.regolith/
+build/
+*.tsbuildinfo
+.DS_Store
+.env
+*.mcaddon
+*.mcpack
+*.mctemplate
+
+# AI & Agent configurations, prompts, and planning artifacts
+AGENTS.md
+CLAUDE.md
+GEMINI.md
+.agents/
+.desloppify/
+.freebuff/
+.superpowers/
+docs/
+scorecard.png
+
+# Local offline documentation corpus (scripts/fetch-reference-docs.sh)
+reference-docs/

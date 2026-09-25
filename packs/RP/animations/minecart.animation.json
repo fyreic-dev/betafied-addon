@@ -1,0 +1,22 @@
+{
+	"format_version": "1.20.80",
+	"animations": {
+	  "animation.minecart.move": {
+		"loop": true,
+		"bones": {
+		  "root": {
+			"position": [
+			  "variable.rail_offset.x",
+			  "variable.rail_offset.y",
+			  "variable.rail_offset.z"
+			],
+			"rotation": [
+				0,
+				"q.body_y_rotation",
+				0
+			  ]
+		  }
+		}
+	  }
+	}
+  }

@@ -1,0 +1,61 @@
+{
+	"format_version": "1.21.130",
+	"minecraft:block": {
+		"description": {
+			"identifier": "bh:fence",
+			"menu_category": {
+				"group": "minecraft:itemGroup.name.fence",
+				"category": "construction"
+			},
+			"states": {
+				"bh:connections": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+			}
+		},
+		"components": {
+			"minecraft:material_instances": {
+				"*": {
+					"texture": "oak_planks",
+					"ambient_occlusion": false
+				}
+			},
+			"minecraft:collision_box": {
+				"size": [16, 24, 16],
+				"origin": [-8, 0, -8]
+			},
+			"minecraft:selection_box": {
+				"size": [4, 16, 4],
+				"origin": [-2, 0, -2]
+			},
+			"minecraft:light_dampening": 0,
+			"minecraft:item_visual": {
+				"geometry": "geometry.identifier_fence_icon",
+				"material_instances": {
+					"*": {
+						"texture": "oak_planks"
+					}
+				}
+			},
+			"minecraft:loot": "loot_tables/blocks/fence.json",
+			"tag:wood": {},
+			"minecraft:flammable": {
+				"destroy_chance_modifier": 5,
+				"catch_chance_modifier": 20
+			},
+			"minecraft:destructible_by_explosion": {
+				"explosion_resistance": 15
+			},
+			"minecraft:destructible_by_mining": {
+				"seconds_to_destroy": 2
+			},
+			"minecraft:geometry": {
+				"identifier": "geometry.identifier_fence",
+				"bone_visibility": {
+					"north": "q.block_state('bh:connections') == 1 || q.block_state('bh:connections') == 3 || q.block_state('bh:connections') == 5 || q.block_state('bh:connections') == 7 || q.block_state('bh:connections') == 9 || q.block_state('bh:connections') == 11 || q.block_state('bh:connections') == 13 || q.block_state('bh:connections') == 15",
+					"east": "q.block_state('bh:connections') == 2 || q.block_state('bh:connections') == 3 || q.block_state('bh:connections') == 6 || q.block_state('bh:connections') == 7 || q.block_state('bh:connections') == 10 || q.block_state('bh:connections') == 11 || q.block_state('bh:connections') == 14 || q.block_state('bh:connections') == 15",
+					"south": "q.block_state('bh:connections') == 4 || q.block_state('bh:connections') == 5 || q.block_state('bh:connections') == 6 || q.block_state('bh:connections') == 7 || q.block_state('bh:connections') == 12 || q.block_state('bh:connections') == 13 || q.block_state('bh:connections') == 14 || q.block_state('bh:connections') == 15",
+					"west": "q.block_state('bh:connections') == 8 || q.block_state('bh:connections') == 9 || q.block_state('bh:connections') == 10 || q.block_state('bh:connections') == 11 || q.block_state('bh:connections') == 12 || q.block_state('bh:connections') == 13 || q.block_state('bh:connections') == 14 || q.block_state('bh:connections') == 15"
+				}
+			}
+		}
+	}
+}

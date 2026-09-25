@@ -1,0 +1,24 @@
+{
+	"resource_pack_name": "Blank",
+	"texture_name": "atlas.items",
+	"texture_data": {
+		"ubd.furnace_minecart": {
+		"textures": "textures/items/furnace_minecart"
+		},
+		"fish_raw": {
+		"textures": "textures/items/fish_raw"
+		},
+		"fish_cooked": {
+		"textures": "textures/items/fish_cooked"
+		},
+		"bh.oak_stairs": {
+			"textures": "textures/items/oak_stairs"
+		},
+		"oak_stairs": {
+			"textures": "textures/items/oak_stairs"
+		},
+		"planks_oak": {
+			"textures": "textures/blocks/planks_oak"
+		}
+	}
+}

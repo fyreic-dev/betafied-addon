@@ -1,0 +1,378 @@
+/**
+ * Mock implementation of @minecraft/server for offline testing and integration verification.
+ */
+
+export const registeredBeforeEvents = new Map<string, Function[]>();
+export const registeredAfterEvents = new Map<string, Function[]>();
+export const scheduledIntervals: { id: number; callback: Function; interval: number }[] = [];
+export const scheduledTimeouts: { id: number; callback: Function; timeout: number }[] = [];
+export const activeJobs: Generator<void, void, unknown>[] = [];
+
+let nextRunId = 1;
+
+export function resetMocks(): void {
+    registeredBeforeEvents.clear();
+    registeredAfterEvents.clear();
+    scheduledIntervals.length = 0;
+    scheduledTimeouts.length = 0;
+    activeJobs.length = 0;
+    nextRunId = 1;
+}
+
+function createEventSignal(registry: Map<string, Function[]>, name: string) {
+    return {
+        subscribe(callback: Function) {
+            const list = registry.get(name) ?? [];
+            list.push(callback);
+            registry.set(name, list);
+            return callback;
+        },
+        unsubscribe(callback: Function) {
+            const list = registry.get(name) ?? [];
+            const idx = list.indexOf(callback);
+            if (idx >= 0) list.splice(idx, 1);
+        }
+    };
+}
+
+export class ItemStack {
+    typeId: string;
+    amount: number;
+    private components = new Map<string, any>();
+
+    constructor(typeId: string, amount: number = 1) {
+        this.typeId = typeId;
+        this.amount = amount;
+    }
+
+    getComponent(componentId: string) {
+        return this.components.get(componentId) ?? null;
+    }
+
+    setComponent(componentId: string, comp: any) {
+        this.components.set(componentId, comp);
+    }
+}
+
+export class BlockPermutation {
+    private static cache = new Map<string, BlockPermutation>();
+
+    readonly typeId: string;
+    private states: Record<string, any>;
+
+    private constructor(typeId: string, states: Record<string, any> = {}) {
+        this.typeId = typeId;
+        this.states = { ...states };
+    }
+
+    static resolve(typeId: string, states: Record<string, any> = {}): BlockPermutation {
+        const key = `${typeId}:${JSON.stringify(states)}`;
+        let perm = BlockPermutation.cache.get(key);
+        if (!perm) {
+            perm = new BlockPermutation(typeId, states);
+            BlockPermutation.cache.set(key, perm);
+        }
+        return perm;
+    }
+
+    getState(key: string): any {
+        return this.states[key];
+    }
+
+    withState(key: string, value: any): BlockPermutation {
+        const next = new BlockPermutation(this.typeId, { ...this.states, [key]: value });
+        return next;
+    }
+
+    matches(typeId: string): boolean {
+        return this.typeId === typeId;
+    }
+}
+
+export class BlockVolume {
+    readonly from: { x: number; y: number; z: number };
+    readonly to: { x: number; y: number; z: number };
+
+    constructor(from: { x: number; y: number; z: number }, to: { x: number; y: number; z: number }) {
+        this.from = from;
+        this.to = to;
+    }
+}
+
+export class MockDimension {
+    readonly id: string;
+
+    constructor(id: string) {
+        this.id = id;
+    }
+
+    getBlock(_location: { x: number; y: number; z: number }) {
+        return {
+            typeId: "minecraft:stone",
+            permutation: BlockPermutation.resolve("minecraft:stone"),
+            isSolid: true,
+            isLiquid: false,
+            setType(_typeId: string) {},
+            setPermutation(_perm: BlockPermutation) {}
+        };
+    }
+
+    getEntities(_query?: any) {
+        return [];
+    }
+
+    spawnItem(_itemStack: ItemStack, _location: { x: number; y: number; z: number }) {
+        return { id: "mock_item_entity", typeId: "minecraft:item" };
+    }
+
+    soundsPlayed: { soundId: string; location: any; options?: any }[] = [];
+
+    playSound(soundId: string, location: any, options?: any) {
+        this.soundsPlayed.push({ soundId, location, options });
+    }
+
+    runCommand(_command: string) {
+        return { successCount: 1 };
+    }
+}
+
+const dimensions = new Map<string, MockDimension>([
+    ["overworld", new MockDimension("minecraft:overworld")],
+    ["nether", new MockDimension("minecraft:the_nether")],
+    ["the_end", new MockDimension("minecraft:the_end")],
+    ["minecraft:overworld", new MockDimension("minecraft:overworld")],
+    ["minecraft:the_nether", new MockDimension("minecraft:the_nether")],
+    ["minecraft:the_end", new MockDimension("minecraft:the_end")]
+]);
+
+export const world = {
+    structureManager: {
+        placedStructures: [] as { structure: string; dimension: any; location: any; options?: any }[],
+        place(structure: string, dimension: any, location: any, options?: any) {
+            this.placedStructures.push({ structure, dimension, location, options });
+        }
+    },
+    getAllPlayers() {
+        return [];
+    },
+    getPlayers() {
+        return [];
+    },
+    getDimension(dimensionId: string) {
+        const dim = dimensions.get(dimensionId);
+        if (!dim) {
+            const created = new MockDimension(dimensionId);
+            dimensions.set(dimensionId, created);
+            return created;
+        }
+        return dim;
+    },
+    beforeEvents: {
+        playerInteractWithBlock: createEventSignal(registeredBeforeEvents, "playerInteractWithBlock"),
+        playerInteractWithEntity: createEventSignal(registeredBeforeEvents, "playerInteractWithEntity"),
+        itemUse: createEventSignal(registeredBeforeEvents, "itemUse"),
+        chatSend: createEventSignal(registeredBeforeEvents, "chatSend")
+    },
+    afterEvents: {
+        entitySpawn: createEventSignal(registeredAfterEvents, "entitySpawn"),
+        entityDie: createEventSignal(registeredAfterEvents, "entityDie"),
+        blockBreak: createEventSignal(registeredAfterEvents, "blockBreak"),
+        entityHurt: createEventSignal(registeredAfterEvents, "entityHurt"),
+        entityHitEntity: createEventSignal(registeredAfterEvents, "entityHitEntity"),
+        playerSpawn: createEventSignal(registeredAfterEvents, "playerSpawn"),
+        playerLeave: createEventSignal(registeredAfterEvents, "playerLeave"),
+        playerPlaceBlock: createEventSignal(registeredAfterEvents, "playerPlaceBlock"),
+        playerBreakBlock: createEventSignal(registeredAfterEvents, "playerBreakBlock"),
+        playerDimensionChange: createEventSignal(registeredAfterEvents, "playerDimensionChange"),
+        itemUse: createEventSignal(registeredAfterEvents, "itemUse"),
+        itemStartUse: createEventSignal(registeredAfterEvents, "itemStartUse"),
+        itemStopUse: createEventSignal(registeredAfterEvents, "itemStopUse"),
+        itemReleaseUse: createEventSignal(registeredAfterEvents, "itemReleaseUse"),
+        chatSend: createEventSignal(registeredAfterEvents, "chatSend"),
+        worldInitialize: createEventSignal(registeredAfterEvents, "worldInitialize")
+    }
+};
+
+export const registeredCustomComponents = new Map<string, any>();
+
+export const system = {
+    currentTick: 0,
+    scheduledTimeouts,
+    scheduledIntervals,
+    activeJobs,
+    beforeEvents: {
+        startup: {
+            subscribe(callback: (arg: any) => void) {
+                callback({
+                    itemComponentRegistry: {
+                        registerCustomComponent(name: string, comp: any) {
+                            registeredCustomComponents.set(name, comp);
+                        }
+                    },
+                    blockComponentRegistry: {
+                        registerCustomComponent(name: string, comp: any) {
+                            registeredCustomComponents.set(name, comp);
+                        }
+                    }
+                });
+            }
+        }
+    },
+    afterEvents: {
+        scriptEventReceive: createEventSignal(registeredAfterEvents, "scriptEventReceive")
+    },
+    run(callback: Function): number {
+        const id = nextRunId++;
+        scheduledTimeouts.push({ id, callback, timeout: 0 });
+        return id;
+    },
+    runInterval(callback: Function, interval: number): number {
+        const id = nextRunId++;
+        scheduledIntervals.push({ id, callback, interval });
+        return id;
+    },
+    runTimeout(callback: Function, timeout: number): number {
+        const id = nextRunId++;
+        scheduledTimeouts.push({ id, callback, timeout });
+        return id;
+    },
+    runJob(generator: Generator<void, void, unknown>): number {
+        const id = nextRunId++;
+        activeJobs.push(generator);
+        return id;
+    },
+    clearRun(id: number): void {
+        const intervalIdx = scheduledIntervals.findIndex(i => i.id === id);
+        if (intervalIdx >= 0) scheduledIntervals.splice(intervalIdx, 1);
+        const timeoutIdx = scheduledTimeouts.findIndex(t => t.id === id);
+        if (timeoutIdx >= 0) scheduledTimeouts.splice(timeoutIdx, 1);
+    }
+};
+
+export const Direction = Object.freeze({
+    Down: "Down",
+    Up: "Up",
+    North: "North",
+    South: "South",
+    West: "West",
+    East: "East"
+});
+
+export const EquipmentSlot = Object.freeze({
+    Head: "Head",
+    Chest: "Chest",
+    Legs: "Legs",
+    Feet: "Feet",
+    Mainhand: "Mainhand",
+    Offhand: "Offhand"
+});
+
+export const StructureRotation = Object.freeze({
+    None: "None",
+    Rotate90: "Rotate90",
+    Rotate180: "Rotate180",
+    Rotate270: "Rotate270"
+});
+
+export const GameMode = Object.freeze({
+    Survival: "survival",
+    Creative: "creative",
+    Adventure: "adventure",
+    Spectator: "spectator"
+});
+
+export const EntityDamageCause = Object.freeze({
+    fall: "fall",
+    fire: "fire",
+    fireTick: "fireTick",
+    lava: "lava",
+    drowning: "drowning",
+    suffocation: "suffocation",
+    void: "void",
+    starve: "starve",
+    magic: "magic",
+    wither: "wither",
+    flyIntoWall: "flyIntoWall"
+});
+
+export const EntityComponentTypes = Object.freeze({
+    Equippable: "minecraft:equippable",
+    Inventory: "minecraft:inventory",
+    Item: "minecraft:item",
+    Health: "minecraft:health",
+    Variant: "minecraft:variant",
+    Movement: "minecraft:movement",
+    Color: "minecraft:color"
+});
+
+export const ItemComponentTypes = Object.freeze({
+    Enchantable: "minecraft:enchantable",
+    Durability: "minecraft:durability",
+    Cooldown: "minecraft:cooldown"
+});
+
+export class Player {
+    id: string = "mock_player";
+    isValid: boolean = true;
+    public gameMode: string = GameMode.Survival;
+    private components = new Map<string, any>();
+    public commandsRun: string[] = [];
+
+    getGameMode(): string {
+        return this.gameMode;
+    }
+
+    getComponent(typeId: string): any {
+        return this.components.get(typeId);
+    }
+
+    setComponent(typeId: string, component: any): void {
+        this.components.set(typeId, component);
+    }
+
+    public animationsPlayed: { animationName: string; options?: any }[] = [];
+
+    playAnimation(animationName: string, options?: any): void {
+        this.animationsPlayed.push({ animationName, options });
+    }
+
+    private tags = new Set<string>();
+
+    addTag(tag: string): boolean {
+        this.tags.add(tag);
+        return true;
+    }
+
+    hasTag(tag: string): boolean {
+        return this.tags.has(tag);
+    }
+
+    removeTag(tag: string): boolean {
+        return this.tags.delete(tag);
+    }
+
+    getTags(): string[] {
+        return [...this.tags];
+    }
+
+    runCommand(cmd: string) {
+        this.commandsRun.push(cmd);
+        return { successCount: 1 };
+    }
+}
+export class Entity {}
+export class Container {}
+export class Block {}
+export class Dimension {}
+export class Vector3 {}
+export class PlayerInteractWithBlockBeforeEvent {}
+export class PlayerPlaceBlockAfterEvent {}
+export class ItemComponentUseOnEvent {}
+export class EntityHealthComponent {}
+export class EntityEquippableComponent {}
+export class EntityRidingComponent {}
+export class ItemUseBeforeEvent {}
+
+
+
+

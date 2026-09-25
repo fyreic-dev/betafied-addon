@@ -1,0 +1,31 @@
+{
+    "format_version": "1.21.50",
+    "minecraft:item": {
+        "description": {
+            "identifier": "bh:oak_log",
+            "menu_category": {
+                "category": "nature",
+                "group": "itemGroup.name.log"
+            }
+        },
+        "components": {
+            "minecraft:max_stack_size": 64,
+            "minecraft:allow_off_hand": true,
+            "minecraft:display_name": {
+                "value": "Oak Wood"
+            },
+            "minecraft:tags": {
+                "tags": [
+                    "minecraft:logs",
+                    "minecraft:is_axe_item_destructible"
+                ]
+            },
+            "minecraft:block_placer": {
+                "block": "minecraft:oak_log",
+                "use_on": [
+                    "minecraft:structure_void"
+                ]
+            }
+        }
+    }
+}

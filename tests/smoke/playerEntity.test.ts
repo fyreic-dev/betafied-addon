@@ -1,0 +1,119 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+/**
+ * The pack overrides `minecraft:player` to retune the first-person animations.
+ * Overriding the client entity replaces the vanilla definition wholesale, so every
+ * animation key the shipped vanilla controllers reference must be re-declared here.
+ * A dangling reference makes `controller.animation.player.root` unresolvable, and
+ * because that controller gates `first_person_attack_controller`, the arm stops
+ * swinging while mining or attacking.
+ *
+ * The list below is the animation keys referenced by the vanilla
+ * `controller.animation.player.root` and `controller.animation.player.first_person_attack`.
+ */
+const CONTROLLER_REQUIRED_KEYS = [
+    "first_person_base_pose",
+    "first_person_breathing_bob",
+    "first_person_swap_item",
+    "first_person_shield_block",
+    "first_person_attack_controller",
+    "first_person_empty_hand",
+    "first_person_walk",
+    "first_person_map_controller",
+    "first_person_crossbow_equipped",
+    "first_person_melee_spear_controller",
+    "first_person_attack_rotation",
+    "first_person_vr_attack_rotation",
+    "humanoid_base_pose",
+    "look_at_target_ui",
+    "look_at_target",
+    "move.arms",
+    "move.legs",
+    "cape",
+    "riding.root",
+    "riding.arms",
+    "riding.legs",
+    "holding",
+    "brandish_spear",
+    "holding_spyglass",
+    "charging",
+    "sneaking",
+    "bob",
+    "damage_nearby_mobs",
+    "swimming",
+    "swimming.no_right_arm",
+    "swimming.legs",
+    "crawling",
+    "crawling.no_right_arm",
+    "crawling.legs",
+    "use_item_progress",
+    "sleeping",
+    "attack.positions",
+    "attack.rotations",
+    "shield_block_main_hand",
+    "shield_block_off_hand",
+    "crossbow_controller",
+    "third_person_bow_equipped",
+    "tooting_goat_horn",
+    "holding_brush",
+    "brushing",
+    "holding_heavy_core",
+    "third_person_melee_spear_controller"
+];
+
+const PUBLIC_VARIABLES = [
+    "variable.attack_time",
+    "variable.item_use_normalized"
+];
+
+describe("Player Client Entity - First-Person Animation Contract", () => {
+    const root = process.cwd();
+
+    function readJson(path: string): any {
+        const raw = readFileSync(resolve(root, path), "utf-8").replace(/^\uFEFF/, "");
+        return JSON.parse(raw);
+    }
+
+    function clientEntityDescription(): any {
+        return readJson("packs/RP/entity/player.entity.json")["minecraft:client_entity"].description;
+    }
+
+    it("declares every animation key the vanilla player controllers reference", () => {
+        const animations = clientEntityDescription().animations;
+        const missing = CONTROLLER_REQUIRED_KEYS.filter((key) => !(key in animations));
+
+        assert.deepEqual(missing, [], `player.entity.json is missing animation keys: ${missing.join(", ")}`);
+    });
+
+    it("keeps the mine sweep entry point wired so the attack swing can run", () => {
+        const animations = clientEntityDescription().animations;
+
+        assert.equal(animations.root, "controller.animation.player.root");
+        assert.equal(animations.first_person_attack_controller, "controller.animation.player.first_person_attack");
+        assert.equal(animations.first_person_attack_rotation, "animation.player.first_person.attack_rotation");
+    });
+
+    it("exposes the attack and item-use variables to attachables", () => {
+        const variables = clientEntityDescription().scripts.variables;
+
+        for (const name of PUBLIC_VARIABLES) {
+            assert.equal(variables[name], "public", `${name} must stay declared as a public variable`);
+        }
+    });
+
+    it("still ships the Java-matched first-person animation overrides", () => {
+        const animations = readJson("packs/RP/animations/player_firstperson.animation.json").animations;
+
+        for (const identifier of [
+            "animation.player.first_person.attack_rotation",
+            "animation.player.first_person.attack_rotation_item",
+            "animation.player.first_person.empty_hand",
+            "animation.player.first_person.walk"
+        ]) {
+            assert.ok(animations[identifier], `Expected the pack to override ${identifier}`);
+        }
+    });
+});

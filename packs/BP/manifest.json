@@ -1,0 +1,56 @@
+{
+    "format_version": 2,
+    "metadata": {
+        "authors": [
+            "betafied",
+            "keirazelle"
+        ]
+    },
+    "header": {
+        "name": "Betafied 4.0",
+        "description": "Betafied recreates Minecraft Beta 1.7.3 in Bedrock Edition.",
+        "min_engine_version": [
+            1,
+            26,
+            51
+        ],
+        "uuid": "9a9048e6-9214-3d27-d6e7-063c1df4b480",
+        "version": [
+            4,
+            0,
+            0
+        ]
+    },
+    "modules": [
+        {
+            "type": "data",
+            "uuid": "b93641bd-9008-113a-b5ad-245bdb67eaec",
+            "version": [
+                4,
+                0,
+                0
+            ]
+        },
+        {
+            "type": "script",
+            "language": "javascript",
+            "uuid": "871745cf-815e-a830-c396-c36823c17849",
+            "entry": "scripts/main.js",
+            "version": [
+                4,
+                0,
+                0
+            ]
+        }
+    ],
+    "dependencies": [
+        {
+            "module_name": "@minecraft/server",
+            "version": "2.11.0-beta"
+        },
+        {
+            "uuid": "e24e7a57-2a36-4e95-a3b6-2e445125b4ab",
+            "version": [4, 0, 0]
+        }
+    ]
+}

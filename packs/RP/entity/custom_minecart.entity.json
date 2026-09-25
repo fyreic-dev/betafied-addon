@@ -1,0 +1,43 @@
+{
+	"format_version": "1.20.80",
+	"minecraft:client_entity": {
+		"description": {
+			"identifier": "ubd:furnace_minecart",
+			"materials": {
+				"default": "entity_alphatest"
+			},
+			"textures": {
+				"default": "textures/entity/furnace_minecart"
+			},
+			"geometry": {
+				"default": "geometry.furnace_minecart",
+				"fueled": "geometry.furnace_minecart_on"
+			},
+			"scripts": {
+				"initialize": [
+					"variable.rail_offset.x = 0.0;",
+					"variable.rail_offset.y = 0.0;",
+					"variable.rail_offset.z = 0.0;"
+				],
+				"pre_animation": [
+					"variable.hurt = query.hurt_time - query.frame_alpha;"
+				  ],
+				"animate": [
+					"move"
+				],
+				"should_update_effects_offscreen": "1.0",
+				"should_update_bones_and_effects_offscreen": "1.0"
+				},
+			"animations": {
+				"move": "animation.minecart.move"
+			},
+			"render_controllers": [
+				{"controller.render.custom_minecart_default" : "query.variant == 0"},
+        		{"controller.render.custom_minecart_fueled" : "query.variant == 1"}
+			],
+			"particle_effects": {
+				"flame": "minecraft:basic_flame_particle"
+			}
+		}
+	}
+}

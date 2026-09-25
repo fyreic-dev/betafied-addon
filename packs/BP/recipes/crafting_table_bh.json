@@ -1,0 +1,28 @@
+{
+    "format_version": "1.20.10",
+    "minecraft:recipe_shaped": {
+        "description": {
+            "identifier": "bh:crafting_table_recipe"
+        },
+        "tags": [
+            "crafting_table",
+            "beta_crafting"
+        ],
+        "pattern": [
+            "AA",
+            "AA"
+        ],
+        "key": {
+            "A": {
+                "tag": "minecraft:planks"
+            }
+        },
+        "unlock": {
+            "context": "AlwaysUnlocked"
+        },
+        "result": {
+            "item": "bh:crafting_table"
+        },
+        "priority": 10
+    }
+}

@@ -1,0 +1,27 @@
+{
+  "format_version": "1.20.10",
+  "minecraft:recipe_shaped": {
+    "description": {
+      "identifier": "bh:oak_fence"
+    },
+    "tags": ["beta_crafting"],
+    "pattern": [
+      "SSS",
+      "SSS"
+    ],
+    "key": {
+      "S": {
+        "item": "minecraft:stick"
+      }
+    },
+    "unlock": [
+      {
+        "item": "minecraft:stick"
+      }
+    ],
+    "result": {
+      "item": "bh:fence",
+      "count": 2
+    }
+  }
+}

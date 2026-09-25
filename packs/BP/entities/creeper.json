@@ -1,0 +1,177 @@
+{
+  "format_version": "1.16.0",
+  "minecraft:entity": {
+    "description": {
+      "identifier": "minecraft:creeper",
+      "is_spawnable": true,
+      "is_summonable": true,
+      "is_experimental": false
+    },
+    "component_groups": {
+      "beta:idle": {
+        "minecraft:environment_sensor": {
+          "triggers": [
+            {
+              "filters": {
+                "all_of": [
+                  {
+                    "test": "distance_to_nearest_player",
+                    "operator": "<=",
+                    "value": 3.5
+                  },
+                  {
+                    "test": "has_target",
+                    "value": true
+                  }
+                ]
+              },
+              "event": "beta:start_fuse"
+            }
+          ]
+        }
+      },
+      "beta:fusing": {
+        "minecraft:explode": {
+          "fuse_length": 1.5,
+          "fuse_lit": true,
+          "power": 3,
+          "causes_fire": false
+        },
+        "minecraft:environment_sensor": {
+          "triggers": [
+            {
+              "filters": {
+                "test": "distance_to_nearest_player",
+                "operator": ">",
+                "value": 4.5
+              },
+              "event": "beta:cancel_fuse"
+            }
+          ]
+        }
+      },
+      "minecraft:creeper_forced_explode": {
+        "minecraft:explode": {
+          "fuse_length": 0,
+          "fuse_lit": true,
+          "power": 3,
+          "causes_fire": false
+        }
+      }
+    },
+    "components": {
+      "minecraft:type_family": {
+        "family": ["creeper", "monster", "mob"]
+      },
+      "minecraft:behavior.melee_attack": {
+        "priority": 1,
+        "speed_multiplier": 1.0,
+        "track_target": true,
+        "require_complete_path": false
+      },
+
+      "minecraft:breathable": {
+        "total_supply": 15,
+        "suffocate_time": 0
+      },
+      "minecraft:nameable": {},
+      "minecraft:health": {
+        "value": 20,
+        "max": 20
+      },
+      "minecraft:hurt_on_condition": {
+        "damage_conditions": [
+          {
+            "filters": {
+              "test": "in_lava",
+              "subject": "self",
+              "operator": "==",
+              "value": true
+            },
+            "cause": "lava",
+            "damage_per_tick": 4
+          }
+        ]
+      },
+      "minecraft:movement": {
+        "value": 0.2
+      },
+      "minecraft:navigation.walk": {
+        "is_amphibious": false,
+        "avoid_sun": false,
+        "can_path_over_water": false
+      },
+      "minecraft:movement.basic": {},
+      "minecraft:jump.static": {},
+      "minecraft:can_climb": {},
+      "minecraft:collision_box": {
+        "width": 0.6,
+        "height": 1.8
+      },
+      "minecraft:behavior.nearest_attackable_target": {
+        "priority": 1,
+        "must_see": true,
+        "must_see_forget_duration": 3.0,
+        "entity_types": [
+          {
+            "filters": {
+              "test": "is_family",
+              "subject": "other",
+              "value": "player"
+            },
+            "max_dist": 16
+          }
+        ]
+      },
+      "minecraft:behavior.hurt_by_target": {
+        "priority": 2
+      },
+      "minecraft:behavior.random_stroll": {
+        "priority": 5,
+        "speed_multiplier": 0.8
+      },
+      "minecraft:behavior.random_look_around": {
+        "priority": 6
+      },
+      "minecraft:behavior.look_at_player": {
+        "priority": 7,
+        "look_distance": 8.0
+      },
+      "minecraft:physics": {},
+      "minecraft:pushable": {
+        "is_pushable": true,
+        "is_pushable_by_piston": true
+      },
+      "minecraft:conditional_bandwidth_optimization": {},
+      "minecraft:explode": {
+        "fuse_length": 1.5,
+        "fuse_lit": false,
+        "power": 3,
+        "causes_fire": false
+      }
+    },
+    "events": {
+      "minecraft:entity_spawned": {
+        "add": {
+          "component_groups": ["beta:idle"]
+        }
+      },
+      "beta:start_fuse": {
+        "remove": {
+          "component_groups": ["beta:idle"]
+        },
+        "add": {
+          "component_groups": ["beta:fusing"]
+        }
+      },
+      "beta:cancel_fuse": {
+        "remove": {
+          "component_groups": ["beta:fusing"]
+        },
+        "add": {
+          "component_groups": ["beta:idle"]
+        }
+      }
+    }
+  }
+}
