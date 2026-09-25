@@ -5,7 +5,8 @@ import {
     Player,
     Container,
     ItemComponentTypes,
-    EntityComponentTypes
+    EntityComponentTypes,
+    EquipmentSlot
 } from "@minecraft/server";
 import { isInventoryExempt } from "./permissions.js";
 import { reportError } from "./errorReporter.js";
@@ -15,7 +16,7 @@ import { tickManager } from "./tickManager.js";
 import { eventBus } from "./eventBus.js";
 
 const CONFIG = Object.freeze({
-    CHECK_INTERVAL: 5,  // faster checks to prevent placement exploit
+    CHECK_INTERVAL: 1,
     MESSAGE_COOLDOWN: 60,
     REMOVE_MSG: "§c[Betafied] §7That item doesn't exist in Beta 1.7.3!",
     ENCHANT_MSG: "§c[Betafied] §7Enchantments removed! Beta 1.7.3 had no enchanting."
@@ -54,19 +55,38 @@ const UNSTACKABLE_UTILITIES: Readonly<Set<string>> = Object.freeze(new Set([
 ]));
 
 const msgCooldowns = new Map<string, number>();
+const previousExemptionState = new Map<string, boolean>();
 
-/**
- * Generator for periodic asynchronous player inventory processing.
- */
-export function* processPlayers(): Generator<void, void, unknown> {
+const EQUIPMENT_SLOTS: readonly EquipmentSlot[] = Object.freeze([
+    EquipmentSlot.Head,
+    EquipmentSlot.Chest,
+    EquipmentSlot.Legs,
+    EquipmentSlot.Feet,
+    EquipmentSlot.Offhand
+]);
+
+export function processPlayers(): void {
     const players = world.getAllPlayers();
 
     for (const player of players) {
+        if (!player.isValid) continue;
+
         try {
-            if (isInventoryExempt(player)) {
-                yield;
+            const isExempt = isInventoryExempt(player);
+            const wasExempt = previousExemptionState.get(player.id) ?? false;
+
+            if (isExempt) {
+                previousExemptionState.set(player.id, true);
                 continue;
             }
+
+            previousExemptionState.set(player.id, false);
+
+            if (wasExempt) {
+                // Immediate transition from exempt to non-exempt: clear cooldown so feedback is immediate
+                msgCooldowns.delete(player.id);
+            }
+
             processInventory(player);
         } catch (e) {
             reportError({
@@ -75,7 +95,6 @@ export function* processPlayers(): Generator<void, void, unknown> {
                 target: player.name
             }, e);
         }
-        yield;
     }
 }
 
@@ -161,44 +180,80 @@ function handleItemUnstacking(player: Player, inv: Container, slotIndex: number,
 }
 
 export function processInventory(player: Player): void {
-    const invComp = player.getComponent(EntityComponentTypes.Inventory);
-    const inv = invComp?.container;
-    if (!inv) return;
-
     let removed = false;
     let stripped = false;
 
-    for (let i = 0; i < inv.size; i++) {
-        const item = inv.getItem(i);
-        if (!item) continue;
+    const invComp = player.getComponent(EntityComponentTypes.Inventory);
+    const inv = invComp?.container;
+    if (inv) {
+        for (let i = 0; i < inv.size; i++) {
+            const item = inv.getItem(i);
+            if (!item) continue;
 
-        const action = evaluateItemAction(item);
+            const action = evaluateItemAction(item);
 
-        switch (action.type) {
-            case "keep":
-                break;
-            case "delete":
-                inv.setItem(i, undefined);
-                removed = true;
-                if (action.reason === "unsupported") {
-                    console.log(`INV: Removed ${item.typeId} from ${player.name}`);
-                }
-                break;
-            case "replace":
-                inv.setItem(i, action.item);
-                break;
-            case "strip_enchantments":
-                inv.setItem(i, action.item);
-                stripped = true;
-                break;
-            case "unstack_food":
-                handleItemUnstacking(player, inv, i, action.convertedId, action.totalAmount);
-                break;
-            case "unstack_utility":
-                handleItemUnstacking(player, inv, i, action.targetId, action.totalAmount);
-                break;
-            default:
-                break;
+            switch (action.type) {
+                case "keep":
+                    break;
+                case "delete":
+                    inv.setItem(i, undefined);
+                    removed = true;
+                    if (action.reason === "unsupported") {
+                        console.log(`INV: Removed ${item.typeId} from ${player.name}`);
+                    }
+                    break;
+                case "replace":
+                    inv.setItem(i, action.item);
+                    break;
+                case "strip_enchantments":
+                    inv.setItem(i, action.item);
+                    stripped = true;
+                    break;
+                case "unstack_food":
+                    handleItemUnstacking(player, inv, i, action.convertedId, action.totalAmount);
+                    break;
+                case "unstack_utility":
+                    handleItemUnstacking(player, inv, i, action.targetId, action.totalAmount);
+                    break;
+                default:
+                    break;
+            }
+        }
+    }
+
+    const equippable = player.getComponent(EntityComponentTypes.Equippable);
+    if (equippable) {
+        for (const slot of EQUIPMENT_SLOTS) {
+            const item = equippable.getEquipment(slot);
+            if (!item) continue;
+
+            const action = evaluateItemAction(item);
+
+            switch (action.type) {
+                case "keep":
+                    break;
+                case "delete":
+                    equippable.setEquipment(slot, undefined);
+                    removed = true;
+                    if (action.reason === "unsupported") {
+                        console.log(`INV: Removed equipped ${item.typeId} from ${player.name}`);
+                    }
+                    break;
+                case "replace":
+                    equippable.setEquipment(slot, action.item);
+                    break;
+                case "strip_enchantments":
+                    equippable.setEquipment(slot, action.item);
+                    stripped = true;
+                    break;
+                case "unstack_food":
+                case "unstack_utility":
+                    equippable.setEquipment(slot, undefined);
+                    removed = true;
+                    break;
+                default:
+                    break;
+            }
         }
     }
 
@@ -215,6 +270,16 @@ function notifyPlayer(player: Player, msg: string): void {
     }
 }
 
+eventBus.onPlayerGameModeChange((ev) => {
+    if (!ev.player?.isValid) return;
+    if (!isInventoryExempt(ev.player)) {
+        msgCooldowns.delete(ev.player.id);
+        previousExemptionState.set(ev.player.id, false);
+        processInventory(ev.player);
+    }
+});
+
 eventBus.onPlayerLeave((ev) => {
     msgCooldowns.delete(ev.playerId);
+    previousExemptionState.delete(ev.playerId);
 });

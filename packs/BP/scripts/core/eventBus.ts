@@ -22,6 +22,7 @@ import type {
     ItemUseBeforeEvent,
     PlayerBreakBlockAfterEvent,
     PlayerDimensionChangeAfterEvent,
+    PlayerGameModeChangeAfterEvent,
     PlayerInteractWithBlockBeforeEvent,
     PlayerInteractWithEntityBeforeEvent,
     PlayerLeaveAfterEvent,
@@ -132,6 +133,10 @@ class EventBus {
         return this.subscribe("playerLeave", callback, priority);
     }
 
+    onPlayerGameModeChange(callback: (event: PlayerGameModeChangeAfterEvent) => void, priority: number = 0): () => void {
+        return this.subscribe("playerGameModeChange", callback, priority);
+    }
+
     onItemStartUse(callback: (event: ItemStartUseAfterEvent) => void, priority: number = 0): () => void {
         return this.subscribe("itemStartUse", callback, priority);
     }
@@ -169,6 +174,7 @@ class EventBus {
         world.afterEvents.playerDimensionChange.subscribe((e) => this.dispatch("playerDimensionChange", e));
         world.afterEvents.playerSpawn.subscribe((e) => this.dispatch("playerSpawn", e));
         world.afterEvents.playerLeave.subscribe((e) => this.dispatch("playerLeave", e));
+        world.afterEvents.playerGameModeChange.subscribe((e) => this.dispatch("playerGameModeChange", e));
         world.afterEvents.itemStartUse.subscribe((e) => this.dispatch("itemStartUse", e));
         world.afterEvents.itemStopUse.subscribe((e) => this.dispatch("itemStopUse", e));
         world.afterEvents.itemReleaseUse.subscribe((e) => this.dispatch("itemReleaseUse", e));

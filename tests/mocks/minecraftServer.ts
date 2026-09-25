@@ -7,6 +7,7 @@ export const registeredAfterEvents = new Map<string, Function[]>();
 export const scheduledIntervals: { id: number; callback: Function; interval: number }[] = [];
 export const scheduledTimeouts: { id: number; callback: Function; timeout: number }[] = [];
 export const activeJobs: Generator<void, void, unknown>[] = [];
+export const mockPlayers: any[] = [];
 
 let nextRunId = 1;
 
@@ -16,6 +17,7 @@ export function resetMocks(): void {
     scheduledIntervals.length = 0;
     scheduledTimeouts.length = 0;
     activeJobs.length = 0;
+    mockPlayers.length = 0;
     nextRunId = 1;
 }
 
@@ -153,10 +155,10 @@ export const world = {
         }
     },
     getAllPlayers() {
-        return [];
+        return [...mockPlayers];
     },
     getPlayers() {
-        return [];
+        return [...mockPlayers];
     },
     getDimension(dimensionId: string) {
         const dim = dimensions.get(dimensionId);
@@ -189,7 +191,8 @@ export const world = {
         itemStopUse: createEventSignal(registeredAfterEvents, "itemStopUse"),
         itemReleaseUse: createEventSignal(registeredAfterEvents, "itemReleaseUse"),
         chatSend: createEventSignal(registeredAfterEvents, "chatSend"),
-        worldInitialize: createEventSignal(registeredAfterEvents, "worldInitialize")
+        worldInitialize: createEventSignal(registeredAfterEvents, "worldInitialize"),
+        playerGameModeChange: createEventSignal(registeredAfterEvents, "playerGameModeChange")
     }
 };
 
@@ -313,10 +316,16 @@ export const ItemComponentTypes = Object.freeze({
 
 export class Player {
     id: string = "mock_player";
+    name: string = "Steve";
     isValid: boolean = true;
     public gameMode: string = GameMode.Survival;
     private components = new Map<string, any>();
     public commandsRun: string[] = [];
+    public messagesSent: string[] = [];
+
+    sendMessage(msg: string): void {
+        this.messagesSent.push(msg);
+    }
 
     getGameMode(): string {
         return this.gameMode;
@@ -361,7 +370,36 @@ export class Player {
     }
 }
 export class Entity {}
-export class Container {}
+export class Container {
+    private slots = new Map<number, any>();
+    public readonly size: number;
+
+    constructor(size: number = 36) {
+        this.size = size;
+    }
+
+    getItem(slot: number): any {
+        return this.slots.get(slot);
+    }
+
+    setItem(slot: number, item?: any): void {
+        if (item === undefined || item === null) {
+            this.slots.delete(slot);
+        } else {
+            this.slots.set(slot, item);
+        }
+    }
+
+    addItem(item: any): any {
+        for (let i = 0; i < this.size; i++) {
+            if (!this.slots.has(i)) {
+                this.slots.set(i, item);
+                return undefined;
+            }
+        }
+        return item;
+    }
+}
 export class Block {}
 export class Dimension {}
 export class Vector3 {}
@@ -369,9 +407,35 @@ export class PlayerInteractWithBlockBeforeEvent {}
 export class PlayerPlaceBlockAfterEvent {}
 export class ItemComponentUseOnEvent {}
 export class EntityHealthComponent {}
-export class EntityEquippableComponent {}
+export class EntityEquippableComponent {
+    private equipment = new Map<string, any>();
+
+    getEquipment(slot: string): any {
+        return this.equipment.get(slot);
+    }
+
+    setEquipment(slot: string, itemStack?: any): boolean {
+        if (itemStack === undefined || itemStack === null) {
+            this.equipment.delete(slot);
+        } else {
+            this.equipment.set(slot, itemStack);
+        }
+        return true;
+    }
+}
 export class EntityRidingComponent {}
 export class ItemUseBeforeEvent {}
+export class PlayerGameModeChangeAfterEvent {
+    readonly player: any;
+    readonly fromGameMode: string;
+    readonly toGameMode: string;
+
+    constructor(player: any, fromGameMode: string, toGameMode: string) {
+        this.player = player;
+        this.fromGameMode = fromGameMode;
+        this.toGameMode = toGameMode;
+    }
+}
 
 
 
