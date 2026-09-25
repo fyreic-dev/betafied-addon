@@ -18,6 +18,9 @@ export function resetMocks(): void {
     scheduledTimeouts.length = 0;
     activeJobs.length = 0;
     mockPlayers.length = 0;
+    for (const dim of dimensions.values()) {
+        dim.blocks.clear();
+    }
     nextRunId = 1;
 }
 
@@ -62,6 +65,10 @@ export class BlockPermutation {
     readonly typeId: string;
     private states: Record<string, any>;
 
+    get type(): { id: string } {
+        return { id: this.typeId };
+    }
+
     private constructor(typeId: string, states: Record<string, any> = {}) {
         this.typeId = typeId;
         this.states = { ...states };
@@ -103,12 +110,21 @@ export class BlockVolume {
 
 export class MockDimension {
     readonly id: string;
+    public blocks = new Map<string, any>();
 
     constructor(id: string) {
         this.id = id;
     }
 
-    getBlock(_location: { x: number; y: number; z: number }) {
+    setBlock(location: { x: number; y: number; z: number }, blockData: any) {
+        this.blocks.set(`${location.x},${location.y},${location.z}`, blockData);
+    }
+
+    getBlock(location: { x: number; y: number; z: number }) {
+        const key = `${location.x},${location.y},${location.z}`;
+        if (this.blocks.has(key)) {
+            return this.blocks.get(key);
+        }
         return {
             typeId: "minecraft:stone",
             permutation: BlockPermutation.resolve("minecraft:stone"),
@@ -314,22 +330,14 @@ export const ItemComponentTypes = Object.freeze({
     Cooldown: "minecraft:cooldown"
 });
 
-export class Player {
-    id: string = "mock_player";
-    name: string = "Steve";
+export class Entity {
+    id: string = "mock_entity";
+    typeId: string = "minecraft:item";
     isValid: boolean = true;
-    public gameMode: string = GameMode.Survival;
-    private components = new Map<string, any>();
-    public commandsRun: string[] = [];
-    public messagesSent: string[] = [];
-
-    sendMessage(msg: string): void {
-        this.messagesSent.push(msg);
-    }
-
-    getGameMode(): string {
-        return this.gameMode;
-    }
+    location: any = { x: 0, y: 64, z: 0 };
+    dimension: any = dimensions.get("minecraft:overworld");
+    protected components = new Map<string, any>();
+    isRemoved: boolean = false;
 
     getComponent(typeId: string): any {
         return this.components.get(typeId);
@@ -337,6 +345,33 @@ export class Player {
 
     setComponent(typeId: string, component: any): void {
         this.components.set(typeId, component);
+    }
+
+    remove(): void {
+        this.isValid = false;
+        this.isRemoved = true;
+    }
+}
+
+export class Player extends Entity {
+    name: string = "Steve";
+    public gameMode: string = GameMode.Survival;
+    public commandsRun: string[] = [];
+    public messagesSent: string[] = [];
+
+    constructor(id: string = "mock_player", name: string = "Steve") {
+        super();
+        this.id = id;
+        this.name = name;
+        this.typeId = "minecraft:player";
+    }
+
+    sendMessage(msg: string): void {
+        this.messagesSent.push(msg);
+    }
+
+    getGameMode(): string {
+        return this.gameMode;
     }
 
     public animationsPlayed: { animationName: string; options?: any }[] = [];
@@ -369,7 +404,6 @@ export class Player {
         return { successCount: 1 };
     }
 }
-export class Entity {}
 export class Container {
     private slots = new Map<number, any>();
     public readonly size: number;
