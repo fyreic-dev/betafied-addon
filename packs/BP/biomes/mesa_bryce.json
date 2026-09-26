@@ -6,12 +6,12 @@
     },
     "components": {
       "minecraft:climate": {
-        "temperature": 2.0,
-        "downfall": 0.0
+        "temperature": 2,
+        "downfall": 0
       },
       "minecraft:overworld_height": {
         "noise_params": [
-          2.0,
+          2,
           3.5
         ]
       },
@@ -33,10 +33,19 @@
             3
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "mesa",
+          "monster",
+          "mutated",
+          "overworld"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

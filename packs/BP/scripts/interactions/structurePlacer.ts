@@ -1,7 +1,6 @@
 import {
     world,
     system,
-    PlayerInteractWithBlockBeforeEvent,
     Direction,
     StructureRotation,
     EntityComponentTypes,
@@ -11,7 +10,6 @@ import {
     ItemComponentUseOnEvent,
     BlockPermutation
 } from "@minecraft/server";
-import { eventBus } from "../core/eventBus.js";
 import { reportError, runCatching } from "../core/errorReporter.js";
 
 /**
@@ -62,7 +60,7 @@ export function isReplaceableBlock(blockTypeId: string): boolean {
 export function playArmSwing(player: Player): void {
     if (typeof player.playAnimation === "function") {
         runCatching({ system: "structurePlacer", operation: "playAnimation.place_swing", target: player.name }, () => {
-            player.playAnimation("animation.player.place_swing", { blendOutTime: 0.05, controller: "arm_swing" });
+            player.playAnimation("animation.player.place_swing", { blendOutTime: 0.05 });
         });
     }
 }
@@ -85,13 +83,31 @@ export function consumeHeldItem(player: Player, itemTypeId: string): void {
     }
 }
 
+export interface StairConfig {
+    structureName: string;
+    soundId: string;
+}
+
+export const STAIR_CONFIG_MAP: Readonly<Record<string, StairConfig>> = Object.freeze({
+    "bh:oak_stairs": {
+        structureName: "mystructure:oak_stairs",
+        soundId: "use.wood"
+    },
+    "bh:cobblestone_stairs": {
+        structureName: "mystructure:cobblestone_stairs",
+        soundId: "use.stone"
+    }
+});
+
 let lastPlacementTick = -1;
 let lastPlacementPlayerId = "";
 
 export function executeStairPlacement(
     player: Player,
     block: { typeId: string; location: { x: number; y: number; z: number } },
-    blockFace: Direction
+    blockFace: Direction,
+    itemTypeId: string = "bh:oak_stairs",
+    config: StairConfig = STAIR_CONFIG_MAP[itemTypeId] ?? STAIR_CONFIG_MAP["bh:oak_stairs"]
 ): void {
     if (!block || !player || !player.isValid) return;
 
@@ -115,15 +131,15 @@ export function executeStairPlacement(
                 return;
             }
 
-            world.structureManager.place("mystructure:oak_stairs", dim, targetLoc, {
+            world.structureManager.place(config.structureName, dim, targetLoc, {
                 rotation,
                 includeBlocks: true,
                 includeEntities: false
             });
 
-            dim.playSound("use.wood", targetLoc, { pitch: 0.8, volume: 1.0 });
+            dim.playSound(config.soundId, targetLoc, { pitch: 0.8, volume: 1.0 });
             playArmSwing(player);
-            consumeHeldItem(player, "bh:oak_stairs");
+            consumeHeldItem(player, itemTypeId);
         } catch (e) {
             reportError({
                 system: "structurePlacer",
@@ -296,42 +312,41 @@ export const SLAB_CONFIG_MAP: Readonly<Record<string, SlabConfig>> = Object.free
     }
 });
 
-export function handleStairItemPlacement(event: PlayerInteractWithBlockBeforeEvent): void {
-    const { itemStack, block, blockFace, player } = event;
-    if (!itemStack || !block || !player || !player.isValid) return;
-
-    const itemId = itemStack.typeId;
-
-    if (itemId === "bh:oak_stairs") {
-        event.cancel = true;
-        executeStairPlacement(player, block, blockFace);
-        return;
-    }
-
-    const logBlockId = LOG_BLOCK_MAP[itemId];
-    if (logBlockId) {
-        event.cancel = true;
-        executeLogPlacement(player, block, blockFace, itemId, logBlockId);
-        return;
-    }
-
-    const slabConfig = SLAB_CONFIG_MAP[itemId];
-    if (slabConfig) {
-        event.cancel = true;
-        executeSlabPlacement(player, block, blockFace, itemId, slabConfig);
-        return;
-    }
-}
-
-eventBus.onPlayerInteractWithBlock(handleStairItemPlacement);
-
 if (system.beforeEvents?.startup) {
     system.beforeEvents.startup.subscribe(({ itemComponentRegistry }) => {
         itemComponentRegistry.registerCustomComponent("bh:stair_placer", {
             onUseOn(event: ItemComponentUseOnEvent) {
                 const player = event.source;
                 if (!(player instanceof Player) || !player.isValid) return;
-                executeStairPlacement(player, event.block, event.blockFace);
+                const itemId = event.itemStack?.typeId ?? "bh:oak_stairs";
+                const stairConfig = STAIR_CONFIG_MAP[itemId] ?? STAIR_CONFIG_MAP["bh:oak_stairs"];
+                executeStairPlacement(player, event.block, event.blockFace, itemId, stairConfig);
+            }
+        });
+
+        itemComponentRegistry.registerCustomComponent("bh:log_placer", {
+            onUseOn(event: ItemComponentUseOnEvent) {
+                const player = event.source;
+                if (!(player instanceof Player) || !player.isValid) return;
+                const itemId = event.itemStack?.typeId;
+                if (!itemId) return;
+                const logBlockId = LOG_BLOCK_MAP[itemId];
+                if (logBlockId) {
+                    executeLogPlacement(player, event.block, event.blockFace, itemId, logBlockId);
+                }
+            }
+        });
+
+        itemComponentRegistry.registerCustomComponent("bh:slab_placer", {
+            onUseOn(event: ItemComponentUseOnEvent) {
+                const player = event.source;
+                if (!(player instanceof Player) || !player.isValid) return;
+                const itemId = event.itemStack?.typeId;
+                if (!itemId) return;
+                const slabConfig = SLAB_CONFIG_MAP[itemId];
+                if (slabConfig) {
+                    executeSlabPlacement(player, event.block, event.blockFace, itemId, slabConfig);
+                }
             }
         });
     });

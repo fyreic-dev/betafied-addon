@@ -6,12 +6,12 @@
     },
     "components": {
       "minecraft:climate": {
-        "temperature": 2.0,
-        "downfall": 0.0
+        "temperature": 2,
+        "downfall": 0
       },
       "minecraft:overworld_height": {
         "noise_params": [
-          1.0,
+          1,
           1.6
         ]
       },
@@ -33,10 +33,14 @@
             10
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "desert",
+          "monster",
+          "overworld"
+        ]
       }
     }
   }
 }
-
-
-

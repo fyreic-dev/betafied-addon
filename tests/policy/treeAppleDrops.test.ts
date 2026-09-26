@@ -3,14 +3,13 @@ import assert from "node:assert/strict";
 import {
     world,
     ItemStack,
-    Player,
     Entity,
     BlockPermutation,
     EntityComponentTypes
 } from "@minecraft/server";
 import { isTreeAppleDrop } from "../../packs/BP/scripts/mobs/entitySpawnHandler.js";
 import { eventBus } from "../../packs/BP/scripts/core/eventBus.js";
-import { mockPlayers, resetMocks } from "../mocks/minecraftServer.js";
+import { mockPlayers, resetMocks, Player } from "../mocks/minecraftServer.js";
 
 describe("Authentic Beta 1.7.3 Leaf Apple Drops Policy", () => {
     beforeEach(() => {

@@ -11,7 +11,7 @@
       },
       "minecraft:overworld_height": {
         "noise_params": [
-          0.0,
+          0,
           0.025
         ]
       },
@@ -33,11 +33,15 @@
             2
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "beach",
+          "cold",
+          "monster",
+          "overworld"
+        ]
       }
     }
   }
 }
-
-
-
-

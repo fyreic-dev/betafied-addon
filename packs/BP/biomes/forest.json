@@ -37,10 +37,19 @@
             5
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "bee_habitat",
+          "forest",
+          "monster",
+          "overworld"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

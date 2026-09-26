@@ -37,10 +37,18 @@
             8
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "extreme_hills",
+          "monster",
+          "overworld"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

@@ -13,6 +13,7 @@ item.bh:golden_apple=Golden Apple
 item.bh:cookie=Cookie
 item.bh:bow=Bow
 item.bh:oak_stairs=Wooden Stairs
+item.bh:cobblestone_stairs=Cobblestone Stairs
 item.bh:oak_log=Oak Wood
 item.bh:birch_log=Birch Wood
 item.bh:spruce_log=Spruce Wood

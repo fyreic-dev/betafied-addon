@@ -1,11 +1,11 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { Direction, StructureRotation, system, world } from "@minecraft/server";
+import { registeredCustomComponents, Player } from "../mocks/minecraftServer.js";
 import {
     getStairStructureRotation,
     getPlacementLocation,
     isReplaceableBlock,
-    handleStairItemPlacement,
     playArmSwing
 } from "../../packs/BP/scripts/interactions/structurePlacer.js";
 
@@ -59,10 +59,11 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         assert.equal(isReplaceableBlock("minecraft:oak_planks"), false);
     });
 
-    it("cancels native interaction and places rotated structure natively when bh:oak_stairs is used", () => {
-        const fakePlayer = {
-            isValid: true,
-            name: "Steve",
+    it("places rotated structure natively via bh:stair_placer when bh:oak_stairs is used", () => {
+        const stairPlacer = registeredCustomComponents.get("bh:stair_placer");
+        assert.ok(stairPlacer && typeof stairPlacer.onUseOn === "function");
+
+        const fakePlayer = Object.assign(new Player("steve_oak_stairs", "Steve"), {
             animationsPlayed: [] as string[],
             getViewDirection() {
                 return { x: 0, y: 0, z: 1 }; // Facing South -> Rotate90
@@ -81,26 +82,18 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
                 runCommand(_cmd: string) {
                     return { successCount: 1 };
                 }
-            },
-            getComponent() {
-                return null;
             }
-        };
+        });
 
-        const fakeEvent = {
+        stairPlacer.onUseOn({
+            source: fakePlayer,
             itemStack: { typeId: "bh:oak_stairs", amount: 1 },
             block: {
                 typeId: "minecraft:stone",
                 location: { x: 20, y: 64, z: 20 }
             },
-            blockFace: Direction.Up,
-            player: fakePlayer,
-            cancel: false
-        };
-
-        handleStairItemPlacement(fakeEvent as any);
-
-        assert.equal(fakeEvent.cancel, true, "Event must be cancelled to prevent native upside-down placement");
+            blockFace: Direction.Up
+        });
 
         // Execute scheduled runner
         const timeouts = (system as any).scheduledTimeouts;
@@ -124,6 +117,57 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         assert.ok(fakePlayer.animationsPlayed.includes("animation.player.place_swing"));
     });
 
+    it("places mystructure:cobblestone_stairs with use.stone sound for bh:cobblestone_stairs via bh:stair_placer", () => {
+        const stairPlacer = registeredCustomComponents.get("bh:stair_placer");
+        assert.ok(stairPlacer && typeof stairPlacer.onUseOn === "function");
+
+        const fakePlayer = Object.assign(new Player("steve_cobble_stairs", "Steve"), {
+            getViewDirection: () => ({ x: 0, y: 0, z: 1 }),
+            animationsPlayed: [] as string[],
+            playAnimation(name: string) {
+                this.animationsPlayed.push(name);
+            },
+            dimension: {
+                soundsPlayed: [] as { soundId: string; location: any }[],
+                getBlock(_loc: any) {
+                    return { typeId: "minecraft:air" };
+                },
+                playSound(soundId: string, location: any) {
+                    this.soundsPlayed.push({ soundId, location });
+                },
+                runCommand(_cmd: string) {
+                    return { successCount: 1 };
+                }
+            }
+        });
+
+        stairPlacer.onUseOn({
+            source: fakePlayer,
+            itemStack: { typeId: "bh:cobblestone_stairs", amount: 1 },
+            block: {
+                typeId: "minecraft:stone",
+                location: { x: 30, y: 64, z: 30 }
+            },
+            blockFace: Direction.Up
+        });
+
+        const timeouts = (system as any).scheduledTimeouts;
+        if (timeouts && timeouts.length > 0) {
+            for (const t of [...timeouts]) {
+                t.callback();
+            }
+        }
+
+        const placed = (world as any).structureManager.placedStructures;
+        assert.ok(placed.length > 0, "A structure was placed natively via world.structureManager");
+        assert.equal(placed[placed.length - 1].structure, "mystructure:cobblestone_stairs");
+        assert.equal(placed[placed.length - 1].options.rotation, StructureRotation.Rotate90);
+
+        assert.ok(fakePlayer.dimension.soundsPlayed.length > 0, "Placement sound was played natively");
+        assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.stone");
+        assert.ok(fakePlayer.animationsPlayed.includes("animation.player.place_swing"));
+    });
+
     it("triggers arm swing animation on the player", () => {
         const animations: string[] = [];
         const mockPlayer = {
@@ -141,12 +185,12 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         );
     });
 
-    it("cancels native placement and sets vertical pillar permutation for bh: logs", () => {
+    it("sets vertical pillar permutation for bh: logs via bh:log_placer", () => {
+        const logPlacer = registeredCustomComponents.get("bh:log_placer");
+        assert.ok(logPlacer && typeof logPlacer.onUseOn === "function");
+
         let placedPerm: any = null;
-        const fakePlayer = {
-            id: "steve_log",
-            isValid: true,
-            name: "Steve",
+        const fakePlayer = Object.assign(new Player("steve_log", "Steve"), {
             animationsPlayed: [] as string[],
             getViewDirection() { return { x: 0, y: 0, z: 1 }; },
             playAnimation(name: string) { this.animationsPlayed.push(name); },
@@ -161,23 +205,18 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
                 playSound(soundId: string, location: any) {
                     this.soundsPlayed.push({ soundId, location });
                 }
-            },
-            getComponent() { return null; }
-        };
+            }
+        });
 
-        const fakeEvent = {
+        logPlacer.onUseOn({
+            source: fakePlayer,
             itemStack: { typeId: "bh:oak_log", amount: 1 },
             block: {
                 typeId: "minecraft:grass_block",
                 location: { x: 10, y: 64, z: 10 }
             },
-            blockFace: Direction.Up,
-            player: fakePlayer,
-            cancel: false
-        };
-
-        handleStairItemPlacement(fakeEvent as any);
-        assert.equal(fakeEvent.cancel, true);
+            blockFace: Direction.Up
+        });
 
         const timeouts = (system as any).scheduledTimeouts;
         if (timeouts && timeouts.length > 0) {
@@ -190,12 +229,12 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.wood");
     });
 
-    it("cancels native placement and places bottom-only slab for bh: slabs", () => {
+    it("places bottom-only slab for bh: slabs via bh:slab_placer", () => {
+        const slabPlacer = registeredCustomComponents.get("bh:slab_placer");
+        assert.ok(slabPlacer && typeof slabPlacer.onUseOn === "function");
+
         let placedPerm: any = null;
-        const fakePlayer = {
-            id: "steve_slab",
-            isValid: true,
-            name: "Steve",
+        const fakePlayer = Object.assign(new Player("steve_slab", "Steve"), {
             animationsPlayed: [] as string[],
             getViewDirection() { return { x: 0, y: 0, z: 1 }; },
             playAnimation(name: string) { this.animationsPlayed.push(name); },
@@ -210,23 +249,18 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
                 playSound(soundId: string, location: any) {
                     this.soundsPlayed.push({ soundId, location });
                 }
-            },
-            getComponent() { return null; }
-        };
+            }
+        });
 
-        const fakeEvent = {
+        slabPlacer.onUseOn({
+            source: fakePlayer,
             itemStack: { typeId: "bh:cobblestone_slab", amount: 1 },
             block: {
                 typeId: "minecraft:stone",
                 location: { x: 10, y: 64, z: 10 }
             },
-            blockFace: Direction.Up,
-            player: fakePlayer,
-            cancel: false
-        };
-
-        handleStairItemPlacement(fakeEvent as any);
-        assert.equal(fakeEvent.cancel, true);
+            blockFace: Direction.Up
+        });
 
         const timeouts = (system as any).scheduledTimeouts;
         if (timeouts && timeouts.length > 0) {
@@ -239,7 +273,105 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.stone");
     });
 
-    it("stacks matching slab into double slab when clicking top face of bottom slab", () => {
+    it("places bottom-only authentic wooden slab for bh:wooden_slab via bh:slab_placer", () => {
+        const slabPlacer = registeredCustomComponents.get("bh:slab_placer");
+        assert.ok(slabPlacer && typeof slabPlacer.onUseOn === "function");
+
+        let placedPerm: any = null;
+        const fakePlayer = Object.assign(new Player("steve_wood_slab", "Steve"), {
+            animationsPlayed: [] as string[],
+            getViewDirection() { return { x: 0, y: 0, z: 1 }; },
+            playAnimation(name: string) { this.animationsPlayed.push(name); },
+            dimension: {
+                soundsPlayed: [] as { soundId: string; location: any }[],
+                getBlock(_loc: any) {
+                    return {
+                        typeId: "minecraft:air",
+                        setPermutation(perm: any) { placedPerm = perm; }
+                    };
+                },
+                playSound(soundId: string, location: any) {
+                    this.soundsPlayed.push({ soundId, location });
+                }
+            }
+        });
+
+        slabPlacer.onUseOn({
+            source: fakePlayer,
+            itemStack: { typeId: "bh:wooden_slab", amount: 1 },
+            block: {
+                typeId: "minecraft:stone",
+                location: { x: 12, y: 64, z: 12 }
+            },
+            blockFace: Direction.Up
+        });
+
+        const timeouts = (system as any).scheduledTimeouts;
+        if (timeouts && timeouts.length > 0) {
+            for (const t of [...timeouts]) { t.callback(); }
+        }
+
+        assert.ok(placedPerm, "Wooden slab permutation must be placed");
+        assert.equal(placedPerm.typeId, "bh:wooden_slab");
+        assert.equal(placedPerm.getState("bh:upper"), false);
+        assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.wood");
+    });
+
+    it("places bottom-only sandstone and stone slabs via bh:slab_placer", () => {
+        const slabPlacer = registeredCustomComponents.get("bh:slab_placer");
+        assert.ok(slabPlacer && typeof slabPlacer.onUseOn === "function");
+
+        const slabItems = [
+            { id: "bh:sandstone_slab", block: "minecraft:sandstone_slab" },
+            { id: "bh:stone_slab", block: "minecraft:smooth_stone_slab" }
+        ];
+
+        for (const { id, block } of slabItems) {
+            let placedPerm: any = null;
+            const fakePlayer = Object.assign(new Player(`steve_${id}`, "Steve"), {
+                animationsPlayed: [] as string[],
+                getViewDirection() { return { x: 0, y: 0, z: 1 }; },
+                playAnimation(name: string) { this.animationsPlayed.push(name); },
+                dimension: {
+                    soundsPlayed: [] as { soundId: string; location: any }[],
+                    getBlock(_loc: any) {
+                        return {
+                            typeId: "minecraft:air",
+                            setPermutation(perm: any) { placedPerm = perm; }
+                        };
+                    },
+                    playSound(soundId: string, location: any) {
+                        this.soundsPlayed.push({ soundId, location });
+                    }
+                }
+            });
+
+            slabPlacer.onUseOn({
+                source: fakePlayer,
+                itemStack: { typeId: id, amount: 1 },
+                block: {
+                    typeId: "minecraft:stone",
+                    location: { x: 15, y: 64, z: 15 }
+                },
+                blockFace: Direction.Up
+            });
+
+            const timeouts = (system as any).scheduledTimeouts;
+            if (timeouts && timeouts.length > 0) {
+                for (const t of [...timeouts]) { t.callback(); }
+            }
+
+            assert.ok(placedPerm, `Slab permutation must be placed for ${id}`);
+            assert.equal(placedPerm.typeId, block);
+            assert.equal(placedPerm.getState("minecraft:vertical_half"), "bottom");
+            assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.stone");
+        }
+    });
+
+    it("stacks matching slab into double slab when clicking top face of bottom slab via bh:slab_placer", () => {
+        const slabPlacer = registeredCustomComponents.get("bh:slab_placer");
+        assert.ok(slabPlacer && typeof slabPlacer.onUseOn === "function");
+
         let stackedPerm: any = null;
         const clickedSlab = {
             typeId: "minecraft:cobblestone_slab",
@@ -247,10 +379,7 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
             setPermutation(perm: any) { stackedPerm = perm; }
         };
 
-        const fakePlayer = {
-            id: "steve_double_slab",
-            isValid: true,
-            name: "Steve",
+        const fakePlayer = Object.assign(new Player("steve_double_slab", "Steve"), {
             animationsPlayed: [] as string[],
             getViewDirection() { return { x: 0, y: 0, z: 1 }; },
             playAnimation(name: string) { this.animationsPlayed.push(name); },
@@ -260,20 +389,15 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
                 playSound(soundId: string, location: any) {
                     this.soundsPlayed.push({ soundId, location });
                 }
-            },
-            getComponent() { return null; }
-        };
+            }
+        });
 
-        const fakeEvent = {
+        slabPlacer.onUseOn({
+            source: fakePlayer,
             itemStack: { typeId: "bh:cobblestone_slab", amount: 1 },
             block: clickedSlab,
-            blockFace: Direction.Up,
-            player: fakePlayer,
-            cancel: false
-        };
-
-        handleStairItemPlacement(fakeEvent as any);
-        assert.equal(fakeEvent.cancel, true);
+            blockFace: Direction.Up
+        });
 
         const timeouts = (system as any).scheduledTimeouts;
         if (timeouts && timeouts.length > 0) {
@@ -283,5 +407,27 @@ describe("Structure Placer Prototype - 3D Item & Structure Rotation", () => {
         assert.ok(stackedPerm, "Double slab permutation must be placed");
         assert.equal(stackedPerm.typeId, "minecraft:cobblestone_double_slab");
         assert.equal(fakePlayer.dimension.soundsPlayed[0].soundId, "use.stone");
+    });
+
+    it("registers custom item components on startup", () => {
+        assert.ok(registeredCustomComponents.has("bh:stair_placer"), "bh:stair_placer must be registered");
+        assert.ok(registeredCustomComponents.has("bh:log_placer"), "bh:log_placer must be registered");
+        assert.ok(registeredCustomComponents.has("bh:slab_placer"), "bh:slab_placer must be registered");
+    });
+
+    it("triggers arm swing animation without invalid controller option", () => {
+        let animationCall: { name: string; options?: any } | null = null;
+        const mockPlayer = {
+            isValid: true,
+            playAnimation(name: string, options?: any) {
+                animationCall = { name, options };
+            }
+        };
+
+        playArmSwing(mockPlayer as any);
+
+        assert.ok(animationCall);
+        assert.equal((animationCall as any).name, "animation.player.place_swing");
+        assert.equal((animationCall as any).options?.controller, undefined, "Must not specify nonexistent arm_swing controller");
     });
 });

@@ -11,7 +11,7 @@
       },
       "minecraft:overworld_height": {
         "noise_params": [
-          1.0,
+          1,
           1.6
         ]
       },
@@ -33,10 +33,15 @@
             5
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "caves",
+          "dripstone_caves",
+          "monster",
+          "overworld"
+        ]
       }
     }
   }
 }
-
-
-

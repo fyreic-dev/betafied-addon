@@ -12,7 +12,7 @@
       "minecraft:overworld_height": {
         "noise_params": [
           1.2,
-          2.0
+          2
         ]
       },
       "minecraft:surface_builder": {
@@ -33,10 +33,20 @@
             8
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "edge",
+          "extreme_hills",
+          "monster",
+          "mountain",
+          "overworld"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

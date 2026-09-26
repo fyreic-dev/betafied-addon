@@ -1,0 +1,140 @@
+import { describe, it } from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync, readdirSync } from "node:fs";
+import { resolve } from "node:path";
+
+describe("Bedrock Natural Spawning Contract - Spawn Rules & Biome Integrity", () => {
+    const root = process.cwd();
+    const biomesDir = resolve(root, "packs/BP/biomes");
+    const spawnRulesDir = resolve(root, "packs/BP/spawn_rules");
+
+    it("verifies every biome file defines non-empty minecraft:tags", () => {
+        const biomeFiles = readdirSync(biomesDir).filter(f => f.endsWith(".json"));
+        assert.ok(biomeFiles.length >= 60, "Expected at least 60 biome definitions");
+
+        for (const file of biomeFiles) {
+            const content = JSON.parse(readFileSync(resolve(biomesDir, file), "utf-8"));
+            const biome = content["minecraft:biome"];
+            assert.ok(biome, `${file} must contain a minecraft:biome root`);
+
+            const tagsComponent = biome.components?.["minecraft:tags"];
+            assert.ok(tagsComponent, `${file} is missing components['minecraft:tags']`);
+            assert.ok(Array.isArray(tagsComponent.tags), `${file} tags must be an array`);
+            assert.ok(tagsComponent.tags.length > 0, `${file} tags array must not be empty`);
+
+            const hasDimensionTag = tagsComponent.tags.some(
+                (t: string) => t === "overworld" || t === "nether" || t === "the_end"
+            );
+            assert.ok(hasDimensionTag, `${file} must declare a dimension tag (overworld, nether, or the_end)`);
+        }
+    });
+
+    it("verifies animal biomes include creature spawn probability for chunk generation", () => {
+        const biomeFiles = readdirSync(biomesDir).filter(f => f.endsWith(".json"));
+
+        for (const file of biomeFiles) {
+            const content = JSON.parse(readFileSync(resolve(biomesDir, file), "utf-8"));
+            const biome = content["minecraft:biome"];
+            const tags = biome.components?.["minecraft:tags"]?.tags ?? [];
+
+            if (tags.includes("animal")) {
+                const prob = biome.components?.["minecraft:creature_spawn_probability"];
+                assert.ok(prob, `${file} has 'animal' tag but lacks minecraft:creature_spawn_probability`);
+                assert.ok(typeof prob.probability === "number" && prob.probability > 0, `${file} must define positive creature spawn probability`);
+            }
+        }
+    });
+
+    it("verifies spawn rules never use invalid grass_block identifier", () => {
+        const ruleFiles = readdirSync(spawnRulesDir).filter(f => f.endsWith(".json"));
+
+        for (const file of ruleFiles) {
+            const raw = readFileSync(resolve(spawnRulesDir, file), "utf-8");
+            assert.ok(
+                !raw.includes("minecraft:grass_block"),
+                `${file} uses invalid block filter 'minecraft:grass_block' (Bedrock spawn engine requires 'minecraft:grass')`
+            );
+        }
+    });
+
+    it("verifies monster spawn rules do not constrain surface spawns to grass", () => {
+        const monsterFiles = ["zombie.json", "skeleton.json", "creeper.json", "spider.json"];
+
+        for (const file of monsterFiles) {
+            const content = JSON.parse(readFileSync(resolve(spawnRulesDir, file), "utf-8"));
+            const conditions = content["minecraft:spawn_rules"]?.conditions ?? [];
+
+            for (const cond of conditions) {
+                if (cond["minecraft:spawns_on_surface"]) {
+                    assert.ok(
+                        !cond["minecraft:spawns_on_block_filter"],
+                        `${file} must not constrain surface spawning to a block filter`
+                    );
+                }
+            }
+        }
+    });
+
+    it("verifies Nether mob spawn rules use underground spawning and valid nether tags", () => {
+        const netherFiles = ["ghast.json", "zombie_pigman.json"];
+
+        for (const file of netherFiles) {
+            const raw = readFileSync(resolve(spawnRulesDir, file), "utf-8");
+            const content = JSON.parse(raw);
+            const conditions = content["minecraft:spawn_rules"]?.conditions ?? [];
+
+            assert.ok(!raw.includes("beta_nether"), `${file} must not reference phantom tag 'beta_nether'`);
+
+            for (const cond of conditions) {
+                assert.ok(
+                    !cond["minecraft:spawns_on_surface"],
+                    `${file} cannot use spawns_on_surface in Nether (Nether has no surface)`
+                );
+                assert.ok(
+                    cond["minecraft:spawns_underground"],
+                    `${file} must use spawns_underground in Nether`
+                );
+            }
+        }
+    });
+
+    it("verifies all Beta mob spawn rules reference existing biome tags", () => {
+        const betaRules = [
+            "chicken.json", "cow.json", "creeper.json", "ghast.json", "pig.json",
+            "sheep.json", "skeleton.json", "slime.json", "spider.json", "squid.json",
+            "wolf.json", "zombie.json", "zombie_pigman.json"
+        ];
+
+        // Collect all declared biome tags across BP biomes
+        const declaredTags = new Set<string>();
+        const biomeFiles = readdirSync(biomesDir).filter(f => f.endsWith(".json"));
+        for (const file of biomeFiles) {
+            const content = JSON.parse(readFileSync(resolve(biomesDir, file), "utf-8"));
+            const tags = content["minecraft:biome"]?.components?.["minecraft:tags"]?.tags ?? [];
+            for (const t of tags) declaredTags.add(t);
+        }
+
+        for (const file of betaRules) {
+            const content = JSON.parse(readFileSync(resolve(spawnRulesDir, file), "utf-8"));
+            const conditions = content["minecraft:spawn_rules"]?.conditions ?? [];
+
+            for (const cond of conditions) {
+                const filter = cond["minecraft:biome_filter"];
+                if (!filter) continue;
+
+                const checkFilter = (f: any) => {
+                    if (f.test === "has_biome_tag" && f.operator === "==") {
+                        assert.ok(
+                            declaredTags.has(f.value),
+                            `${file} references tag '${f.value}' which does not exist in any biome`
+                        );
+                    }
+                    if (f.any_of) f.any_of.forEach(checkFilter);
+                    if (f.all_of) f.all_of.forEach(checkFilter);
+                };
+
+                checkFilter(filter);
+            }
+        }
+    });
+});

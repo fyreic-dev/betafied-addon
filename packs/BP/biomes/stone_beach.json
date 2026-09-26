@@ -33,10 +33,15 @@
             1
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "beach",
+          "monster",
+          "overworld",
+          "stone"
+        ]
       }
     }
   }
 }
-
-
-

@@ -17,6 +17,12 @@
 		"oak_stairs": {
 			"textures": "textures/items/oak_stairs"
 		},
+		"bh.cobblestone_stairs": {
+			"textures": "textures/items/cobblestone_stairs"
+		},
+		"cobblestone_stairs": {
+			"textures": "textures/items/cobblestone_stairs"
+		},
 		"planks_oak": {
 			"textures": "textures/blocks/planks_oak"
 		}

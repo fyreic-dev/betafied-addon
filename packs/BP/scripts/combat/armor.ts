@@ -33,17 +33,10 @@ const ARMOR_TABLE: Readonly<Record<string, number>> = Object.freeze({
 });
 
 const BYPASS_SOURCES = Object.freeze(new Set([
-    EntityDamageCause.fall,
-    EntityDamageCause.fire,
-    EntityDamageCause.fireTick,
-    EntityDamageCause.lava,
-    EntityDamageCause.drowning,
-    EntityDamageCause.suffocation,
     EntityDamageCause.void,
     EntityDamageCause.starve,
-    EntityDamageCause.magic,
-    EntityDamageCause.wither,
-    EntityDamageCause.flyIntoWall
+    EntityDamageCause.selfDestruct,
+    "suicide"
 ]));
 
 const SLOTS = Object.freeze([
@@ -52,6 +45,34 @@ const SLOTS = Object.freeze([
     EquipmentSlot.Legs,
     EquipmentSlot.Feet
 ]);
+
+export function damageArmor(player: Player): void {
+    const equip = player.getComponent(EntityComponentTypes.Equippable);
+    if (!equip) return;
+
+    for (const slot of SLOTS) {
+        const item = equip.getEquipment(slot);
+        if (!item) continue;
+
+        if (getBaseArmorPoints(item.typeId) <= 0) continue;
+
+        const dur = item.getComponent(ItemComponentTypes.Durability);
+        if (!dur || dur.maxDurability <= 0) continue;
+
+        const nextDamage = dur.damage + 1;
+        if (nextDamage >= dur.maxDurability) {
+            equip.setEquipment(slot, undefined);
+            runCatching({ system: "armor", operation: "breakSound", target: player.id }, () => {
+                if (typeof player.playSound === "function") {
+                    player.playSound("random.break", { volume: 1.0, pitch: 0.9 });
+                }
+            });
+        } else {
+            dur.damage = nextDamage;
+            equip.setEquipment(slot, item);
+        }
+    }
+}
 
 export function getBaseArmorPoints(typeId: string): number {
     const direct = ARMOR_TABLE[typeId];
@@ -119,6 +140,8 @@ eventBus.onEntityHurt((ev) => {
     const damageSource = ev.damageSource;
 
     if (!(player instanceof Player)) return;
+    if (!player.isValid) return;
+    if (damage <= 0) return;
     if (typeof player.getGameMode === "function" && player.getGameMode() === GameMode.Creative) return;
     if (BYPASS_SOURCES.has(damageSource.cause)) return;
 
@@ -136,6 +159,7 @@ eventBus.onEntityHurt((ev) => {
         }
     }
 
+    damageArmor(player);
     updatePlayerArmorDisplay(player);
 });
 

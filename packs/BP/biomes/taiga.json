@@ -12,7 +12,7 @@
       "minecraft:overworld_height": {
         "noise_params": [
           1.2,
-          2.0
+          2
         ]
       },
       "minecraft:surface_builder": {
@@ -37,10 +37,19 @@
             5
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "forest",
+          "monster",
+          "overworld",
+          "taiga"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

@@ -2,7 +2,6 @@ import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 import {
     ItemStack,
-    Player,
     Container,
     EntityComponentTypes,
     EquipmentSlot,
@@ -17,7 +16,7 @@ import {
 } from "../../packs/BP/scripts/core/inventoryManager.js";
 import { PRIVILEGED_TAGS } from "../../packs/BP/scripts/core/permissions.js";
 import { eventBus } from "../../packs/BP/scripts/core/eventBus.js";
-import { mockPlayers } from "../mocks/minecraftServer.js";
+import { mockPlayers, Player } from "../mocks/minecraftServer.js";
 
 describe("Inventory Manager Item Normalization & Unstacking", () => {
     describe("Bow Normalization", () => {
@@ -37,24 +36,105 @@ describe("Inventory Manager Item Normalization & Unstacking", () => {
         it("replaces vanilla stairs, logs, and slabs with bh: equivalents", () => {
             const items = [
                 { vanilla: "minecraft:oak_stairs", bh: "bh:oak_stairs" },
+                { vanilla: "minecraft:spruce_stairs", bh: "bh:oak_stairs" },
+                { vanilla: "minecraft:birch_stairs", bh: "bh:oak_stairs" },
+                { vanilla: "minecraft:dark_oak_stairs", bh: "bh:oak_stairs" },
+                { vanilla: "minecraft:stone_stairs", bh: "bh:cobblestone_stairs" },
+                { vanilla: "minecraft:cobblestone_stairs", bh: "bh:cobblestone_stairs" },
+                { vanilla: "minecraft:brick_stairs", bh: "bh:cobblestone_stairs" },
+                { vanilla: "minecraft:sandstone_stairs", bh: "bh:cobblestone_stairs" },
                 { vanilla: "minecraft:oak_log", bh: "bh:oak_log" },
                 { vanilla: "minecraft:birch_log", bh: "bh:birch_log" },
                 { vanilla: "minecraft:spruce_log", bh: "bh:spruce_log" },
+                { vanilla: "minecraft:wood", bh: "bh:oak_log" },
+                { vanilla: "minecraft:oak_wood", bh: "bh:oak_log" },
+                { vanilla: "minecraft:spruce_wood", bh: "bh:spruce_log" },
+                { vanilla: "minecraft:birch_wood", bh: "bh:birch_log" },
+                { vanilla: "minecraft:dark_oak_log", bh: "bh:oak_log" },
+                { vanilla: "minecraft:jungle_log", bh: "bh:oak_log" },
+                { vanilla: "minecraft:stripped_oak_log", bh: "bh:oak_log" },
+                { vanilla: "minecraft:stripped_spruce_log", bh: "bh:spruce_log" },
+                { vanilla: "minecraft:stripped_birch_log", bh: "bh:birch_log" },
                 { vanilla: "minecraft:cobblestone_slab", bh: "bh:cobblestone_slab" },
                 { vanilla: "minecraft:sandstone_slab", bh: "bh:sandstone_slab" },
                 { vanilla: "minecraft:smooth_stone_slab", bh: "bh:stone_slab" },
                 { vanilla: "minecraft:stone_slab", bh: "bh:stone_slab" },
-                { vanilla: "minecraft:oak_slab", bh: "bh:wooden_slab" }
+                { vanilla: "minecraft:oak_slab", bh: "bh:wooden_slab" },
+                { vanilla: "minecraft:wooden_slab", bh: "bh:wooden_slab" },
+                { vanilla: "minecraft:spruce_slab", bh: "bh:wooden_slab" },
+                { vanilla: "minecraft:birch_slab", bh: "bh:wooden_slab" },
+                { vanilla: "minecraft:dark_oak_slab", bh: "bh:wooden_slab" }
             ];
 
             for (const { vanilla, bh } of items) {
                 const action = evaluateItemAction(new ItemStack(vanilla, 5));
-                assert.equal(action.type, "replace");
+                assert.equal(action.type, "replace", `Expected ${vanilla} to have action type replace`);
                 if (action.type === "replace") {
-                    assert.equal(action.item.typeId, bh);
+                    assert.equal(action.item.typeId, bh, `Expected ${vanilla} to convert to ${bh}`);
                     assert.equal(action.item.amount, 5);
                 }
             }
+        });
+    });
+
+    describe("Placer Normalization for Exempt and Creative Players", () => {
+        it("replaces vanilla logs, wood, slabs, and stairs with bh: items even when player is in Creative mode", () => {
+            const player = new Player();
+            player.name = "CreativeBuilder";
+            player.id = "builder_creative_1";
+            player.gameMode = GameMode.Creative;
+
+            const inv = new Container(36);
+            inv.setItem(0, new ItemStack("minecraft:oak_log", 64));
+            inv.setItem(1, new ItemStack("minecraft:oak_stairs", 64));
+            inv.setItem(2, new ItemStack("minecraft:oak_slab", 64));
+            inv.setItem(3, new ItemStack("minecraft:wood", 64));
+            inv.setItem(4, new ItemStack("minecraft:elytra", 1));
+            player.setComponent(EntityComponentTypes.Inventory, { container: inv });
+
+            mockPlayers.length = 0;
+            mockPlayers.push(player);
+
+            processPlayers();
+
+            assert.equal(inv.getItem(0)?.typeId, "bh:oak_log");
+            assert.equal(inv.getItem(0)?.amount, 64);
+            assert.equal(inv.getItem(1)?.typeId, "bh:oak_stairs");
+            assert.equal(inv.getItem(1)?.amount, 64);
+            assert.equal(inv.getItem(2)?.typeId, "bh:wooden_slab");
+            assert.equal(inv.getItem(2)?.amount, 64);
+            assert.equal(inv.getItem(3)?.typeId, "bh:oak_log");
+            assert.equal(inv.getItem(3)?.amount, 64);
+            assert.equal(inv.getItem(4)?.typeId, "minecraft:elytra", "Other creative items must be preserved");
+
+            mockPlayers.length = 0;
+        });
+
+        it("replaces vanilla logs, wood, slabs, and stairs with bh: items even when player has builder_exempt tag", () => {
+            const player = new Player();
+            player.name = "StaffBuilder";
+            player.id = "builder_staff_1";
+            player.gameMode = GameMode.Survival;
+            player.addTag(PRIVILEGED_TAGS.BUILDER_EXEMPT);
+
+            const inv = new Container(36);
+            inv.setItem(0, new ItemStack("minecraft:spruce_log", 32));
+            inv.setItem(1, new ItemStack("minecraft:cobblestone_slab", 32));
+            inv.setItem(2, new ItemStack("minecraft:netherite_pickaxe", 1));
+            player.setComponent(EntityComponentTypes.Inventory, { container: inv });
+
+            mockPlayers.length = 0;
+            mockPlayers.push(player);
+
+            processPlayers();
+
+            assert.equal(inv.getItem(0)?.typeId, "bh:spruce_log");
+            assert.equal(inv.getItem(0)?.amount, 32);
+            assert.equal(inv.getItem(1)?.typeId, "bh:cobblestone_slab");
+            assert.equal(inv.getItem(1)?.amount, 32);
+            assert.equal(inv.getItem(2)?.typeId, "minecraft:netherite_pickaxe", "Other exempt items must be preserved");
+
+            mockPlayers.length = 0;
         });
     });
 

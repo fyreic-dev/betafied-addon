@@ -6,12 +6,12 @@
     },
     "components": {
       "minecraft:climate": {
-        "temperature": 0.0,
+        "temperature": 0,
         "downfall": 0.5
       },
       "minecraft:overworld_height": {
         "noise_params": [
-          1.0,
+          1,
           1.6
         ]
       },
@@ -33,10 +33,21 @@
             10
           ]
         ]
+      },
+      "minecraft:tags": {
+        "tags": [
+          "animal",
+          "cold",
+          "forest",
+          "hills",
+          "monster",
+          "overworld",
+          "taiga"
+        ]
+      },
+      "minecraft:creature_spawn_probability": {
+        "probability": 0.07
       }
     }
   }
 }
-
-
-

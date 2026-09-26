@@ -18,8 +18,7 @@ const BOTTOM_ONLY_SLABS = Object.freeze(new Set([
     "minecraft:cobblestone_slab",
     "minecraft:oak_slab",
     "minecraft:smooth_stone_slab",
-    "minecraft:sandstone_slab",
-    "bh:wooden_slab"
+    "minecraft:sandstone_slab"
 ]));
 
 const BOTTOM_ONLY_STAIRS = Object.freeze(new Set([

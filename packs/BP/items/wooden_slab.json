@@ -2,32 +2,31 @@
     "format_version": "1.21.50",
     "minecraft:item": {
         "description": {
-            "identifier": "bh:oak_log",
+            "identifier": "bh:wooden_slab",
             "menu_category": {
-                "category": "nature",
-                "group": "itemGroup.name.log"
+                "category": "construction",
+                "group": "itemGroup.name.slab"
             }
         },
         "components": {
             "minecraft:max_stack_size": 64,
             "minecraft:allow_off_hand": true,
             "minecraft:display_name": {
-                "value": "Oak Wood"
+                "value": "Wooden Slab"
             },
             "minecraft:tags": {
                 "tags": [
-                    "minecraft:logs",
-                    "minecraft:is_axe_item_destructible"
+                    "minecraft:slabs"
                 ]
             },
             "minecraft:block_placer": {
-                "block": "minecraft:oak_log",
+                "block": "minecraft:oak_slab",
                 "use_on": [
                     "minecraft:structure_void"
                 ]
             },
             "minecraft:custom_components": [
-                "bh:log_placer"
+                "bh:slab_placer"
             ]
         }
     }

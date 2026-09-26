@@ -3,15 +3,18 @@ import assert from "node:assert/strict";
 import {
     getBaseArmorPoints,
     getEffectiveArmorPoints,
-    updatePlayerArmorDisplay
+    updatePlayerArmorDisplay,
+    damageArmor
 } from "../../packs/BP/scripts/combat/armor.js";
 import {
     Player,
     EquipmentSlot,
     EntityComponentTypes,
     ItemComponentTypes,
+    EntityDamageCause,
     GameMode
 } from "../mocks/minecraftServer.js";
+import { eventBus } from "../../packs/BP/scripts/core/eventBus.js";
 
 describe("Beta Armor Points & Titleraw HUD Display", () => {
     describe("getBaseArmorPoints", () => {
@@ -194,4 +197,226 @@ describe("Beta Armor Points & Titleraw HUD Display", () => {
             assert.equal(player.commandsRun[0], 'titleraw @s title {"rawtext":[{"text":"_a0"}]}');
         });
     });
+
+    describe("damageArmor - Classic Beta 1.7.3 Durability Degradation", () => {
+        it("increments damage by 1 on all equipped armor pieces with durability", () => {
+            const player = new Player();
+            player.id = "test_player_damage_armor";
+
+            const helmetDur = { maxDurability: 100, damage: 10 };
+            const chestDur = { maxDurability: 200, damage: 20 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Head, {
+                    typeId: "minecraft:diamond_helmet",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? helmetDur : null
+                }],
+                [EquipmentSlot.Chest, {
+                    typeId: "minecraft:diamond_chestplate",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? chestDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            damageArmor(player as any);
+
+            assert.equal(helmetDur.damage, 11);
+            assert.equal(chestDur.damage, 21);
+        });
+
+        it("breaks and clears armor piece when damage reaches maxDurability, playing break sound", () => {
+            const player = new Player();
+            player.id = "test_player_break_armor";
+
+            const helmetDur = { maxDurability: 50, damage: 49 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Head, {
+                    typeId: "minecraft:iron_helmet",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? helmetDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            damageArmor(player as any);
+
+            assert.equal(equipment.get(EquipmentSlot.Head), undefined);
+            assert.equal(player.soundsPlayed.length, 1);
+            assert.equal(player.soundsPlayed[0].soundId, "random.break");
+        });
+
+        it("ignores non-armor equipped items", () => {
+            const player = new Player();
+            player.id = "test_player_non_armor";
+
+            const stickDur = { maxDurability: 100, damage: 0 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Head, {
+                    typeId: "minecraft:stick",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? stickDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            damageArmor(player as any);
+
+            assert.equal(stickDur.damage, 0);
+        });
+    });
+
+    describe("onEntityHurt Durability Loss & Parity", () => {
+        it("reduces armor durability and restores blocked health when taking combat damage", () => {
+            const player = new Player();
+            player.id = "test_player_combat_hurt";
+            const chestDur = { maxDurability: 200, damage: 0 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Chest, {
+                    typeId: "minecraft:diamond_chestplate",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? chestDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            const health = { currentValue: 18, effectiveMax: 20, setCurrentValue(v: number) { this.currentValue = v; } };
+            player.setComponent(EntityComponentTypes.Health, health);
+
+            eventBus.dispatch("entityHurt", {
+                hurtEntity: player,
+                damage: 4,
+                damageSource: { cause: EntityDamageCause.entityAttack }
+            });
+
+            assert.equal(chestDur.damage, 1);
+            // 8 armor points * 0.04 = 0.32 reduction; blocked = 4 * 0.32 = 1.28
+            assert.equal(health.currentValue, 19.28);
+        });
+
+        it("reduces armor durability on authentic Beta environmental damage (fall, fire)", () => {
+            const player = new Player();
+            player.id = "test_player_env_hurt";
+            const bootsDur = { maxDurability: 100, damage: 5 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Feet, {
+                    typeId: "minecraft:iron_boots",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? bootsDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            const health = { currentValue: 18, effectiveMax: 20, setCurrentValue(v: number) { this.currentValue = v; } };
+            player.setComponent(EntityComponentTypes.Health, health);
+
+            eventBus.dispatch("entityHurt", {
+                hurtEntity: player,
+                damage: 3,
+                damageSource: { cause: EntityDamageCause.fall }
+            });
+
+            assert.equal(bootsDur.damage, 6);
+        });
+
+        it("bypasses armor and does not damage durability for void or starve damage", () => {
+            const player = new Player();
+            player.id = "test_player_void_hurt";
+            const chestDur = { maxDurability: 200, damage: 0 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Chest, {
+                    typeId: "minecraft:diamond_chestplate",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? chestDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            eventBus.dispatch("entityHurt", {
+                hurtEntity: player,
+                damage: 4,
+                damageSource: { cause: EntityDamageCause.void }
+            });
+
+            assert.equal(chestDur.damage, 0);
+        });
+
+        it("does not reduce durability when damage is 0 or less", () => {
+            const player = new Player();
+            player.id = "test_player_zero_hurt";
+            const chestDur = { maxDurability: 200, damage: 0 };
+
+            const equipment = new Map<EquipmentSlot, any>([
+                [EquipmentSlot.Chest, {
+                    typeId: "minecraft:diamond_chestplate",
+                    getComponent: (type: string) => type === ItemComponentTypes.Durability ? chestDur : null
+                }]
+            ]);
+
+            player.setComponent(EntityComponentTypes.Equippable, {
+                getEquipment: (slot: EquipmentSlot) => equipment.get(slot) || null,
+                setEquipment: (slot: EquipmentSlot, item: any) => {
+                    if (!item) equipment.delete(slot);
+                    else equipment.set(slot, item);
+                    return true;
+                }
+            });
+
+            eventBus.dispatch("entityHurt", {
+                hurtEntity: player,
+                damage: 0,
+                damageSource: { cause: EntityDamageCause.entityAttack }
+            });
+
+            assert.equal(chestDur.damage, 0);
+        });
+    });
 });
+

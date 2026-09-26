@@ -88,13 +88,13 @@ function matchNether(bareId: string): NormalizationResult | null {
     return null;
 }
 
-function isStoneCompound(bareId: string): boolean {
+export function isStoneCompound(bareId: string): boolean {
     return bareId.includes("stone") || bareId.includes("cobble") || bareId.includes("deepslate") || bareId.includes("brick");
 }
 
 function matchWoodBuilding(bareId: string): NormalizationResult | null {
     if (bareId.endsWith("_planks")) return { action: "convert", targetId: "minecraft:oak_planks" };
-    if (bareId.endsWith("_log") || bareId.endsWith("_stem") || bareId.endsWith("_wood") || bareId.includes("stripped_")) {
+    if (bareId.endsWith("_log") || bareId.endsWith("_stem") || bareId.endsWith("_wood") || bareId.includes("stripped_") || bareId === "wood" || bareId === "log" || bareId === "log2") {
         return { action: "convert", targetId: "minecraft:oak_log" };
     }
     if (bareId.endsWith("_fence") || bareId.endsWith("_fence_gate")) return { action: "convert", targetId: "bh:fence" };

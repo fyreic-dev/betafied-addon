@@ -311,7 +311,13 @@ export const EntityDamageCause = Object.freeze({
     starve: "starve",
     magic: "magic",
     wither: "wither",
-    flyIntoWall: "flyIntoWall"
+    flyIntoWall: "flyIntoWall",
+    entityAttack: "entityAttack",
+    projectile: "projectile",
+    entityExplosion: "entityExplosion",
+    blockExplosion: "blockExplosion",
+    selfDestruct: "selfDestruct",
+    suicide: "suicide"
 });
 
 export const EntityComponentTypes = Object.freeze({
@@ -375,9 +381,14 @@ export class Player extends Entity {
     }
 
     public animationsPlayed: { animationName: string; options?: any }[] = [];
+    public soundsPlayed: { soundId: string; options?: any }[] = [];
 
     playAnimation(animationName: string, options?: any): void {
         this.animationsPlayed.push({ animationName, options });
+    }
+
+    playSound(soundId: string, options?: any): void {
+        this.soundsPlayed.push({ soundId, options });
     }
 
     private tags = new Set<string>();
